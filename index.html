@@ -430,14 +430,18 @@
             line-height: 1.5;
         }
 
-        /* Hover zone for details panel */
+        /* Hover zone for details panel - bottom right corner */
         .hover-zone {
             position: fixed;
             bottom: 0;
             right: 0;
-            width: 400px;
-            height: 300px;
+            width: 350px;
+            height: 250px;
             z-index: 85;
+        }
+
+        body.gallery-mode .hover-zone {
+            pointer-events: none;
         }
 
         /* Zoom overlay - Swiss Editorial */
@@ -561,6 +565,12 @@
             top: var(--space-5);
             left: var(--space-6);
             z-index: 100;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        }
+
+        .gallery-name:hover {
+            opacity: 0.6;
         }
 
         .gallery-name span {
@@ -570,6 +580,236 @@
             letter-spacing: 0.15em;
             text-transform: uppercase;
         }
+
+        .gallery-name .view-all {
+            display: block;
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: all 0.3s ease;
+        }
+
+        .gallery-name:hover .view-all {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Gallery mode - hide single-view elements */
+        body.gallery-mode .nav-arrow,
+        body.gallery-mode .editorial-title,
+        body.gallery-mode .counter-display,
+        body.gallery-mode .details-panel,
+        body.gallery-mode .click-hint {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        body.gallery-mode .gallery-name .view-all {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Gallery mode instruction */
+        .gallery-instruction {
+            position: fixed;
+            bottom: var(--space-6);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: var(--font-size-xs);
+            font-weight: 400;
+            color: var(--color-text-secondary);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        body.gallery-mode .gallery-instruction {
+            opacity: 1;
+        }
+
+        /* Gallery mode canvas cursor */
+        body.gallery-mode #canvas-container {
+            cursor: pointer;
+        }
+
+        body.gallery-mode.hovering-painting #canvas-container {
+            cursor: pointer;
+        }
+
+        /* ==================== MOBILE RESPONSIVE ==================== */
+
+        /* Tablet */
+        @media (max-width: 1024px) {
+            :root {
+                --space-6: 24px;
+                --font-size-xl: 1.5rem;
+            }
+
+            .details-panel {
+                max-width: 320px;
+                padding: 20px;
+            }
+
+            .nav-arrow {
+                width: 44px;
+                height: 44px;
+            }
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            :root {
+                --space-5: 16px;
+                --space-6: 20px;
+                --font-size-xl: 1.25rem;
+                --font-size-lg: 1rem;
+            }
+
+            .gallery-name {
+                top: var(--space-5);
+                left: var(--space-5);
+            }
+
+            .gallery-name span {
+                font-size: 11px;
+            }
+
+            .counter-display {
+                top: var(--space-5);
+                right: var(--space-5);
+            }
+
+            .counter-display .current {
+                font-size: 1.5rem;
+            }
+
+            .counter-display .total {
+                font-size: 0.85rem;
+            }
+
+            .editorial-title {
+                bottom: var(--space-5);
+                left: var(--space-5);
+                right: 80px;
+            }
+
+            .editorial-title h1 {
+                font-size: var(--font-size-lg);
+            }
+
+            .nav-arrow {
+                width: 48px;
+                height: 48px;
+                opacity: 0.4;
+            }
+
+            .nav-arrow.left {
+                left: var(--space-5);
+            }
+
+            .nav-arrow.right {
+                right: var(--space-5);
+            }
+
+            .nav-arrow svg {
+                width: 24px;
+                height: 24px;
+            }
+
+            /* Details panel - full width on mobile */
+            .details-panel {
+                right: 0;
+                bottom: 0;
+                left: 0;
+                max-width: 100%;
+                border-radius: 16px 16px 0 0;
+                padding: 20px;
+                transform: translateY(100%);
+            }
+
+            .details-panel.visible {
+                transform: translateY(0);
+            }
+
+            .hover-zone {
+                width: 100%;
+                height: 80px;
+            }
+
+            /* Mobile tap hint */
+            .click-hint {
+                bottom: 100px;
+                font-size: 10px;
+            }
+
+            /* Gallery instruction */
+            .gallery-instruction {
+                bottom: var(--space-5);
+                font-size: 10px;
+            }
+
+            /* Zoom overlay adjustments */
+            .zoom-container {
+                padding: 16px;
+            }
+
+            .zoom-info h2 {
+                font-size: 1.25rem;
+            }
+
+            .zoom-close {
+                top: 16px;
+                right: 16px;
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        /* Small mobile */
+        @media (max-width: 480px) {
+            .editorial-title h1 {
+                font-size: 1rem;
+            }
+
+            .details-panel {
+                padding: 16px;
+            }
+
+            .meta-grid {
+                gap: 8px 16px;
+            }
+
+            .price-display {
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Touch device - always show nav arrows */
+        @media (hover: none) and (pointer: coarse) {
+            .nav-arrow {
+                opacity: 0.5;
+            }
+
+            .nav-arrow:active {
+                opacity: 0.8;
+                transform: scale(0.95);
+            }
+
+            .click-hint {
+                display: none;
+            }
+
+            /* Show tap hint instead */
+            .tap-hint {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
@@ -577,9 +817,15 @@
 
     <div class="loading" id="loading">Loading</div>
 
-    <!-- Gallery Name - Top Left -->
-    <div class="gallery-name">
+    <!-- Gallery Name - Top Left (Click to toggle gallery view) -->
+    <div class="gallery-name" id="galleryToggle" onclick="toggleGalleryMode()">
         <span>Galerie</span>
+        <span class="view-all" id="viewAllText">View All</span>
+    </div>
+
+    <!-- Gallery mode instruction -->
+    <div class="gallery-instruction" id="galleryInstruction">
+        Click a painting to view
     </div>
 
     <!-- Counter - Top Right -->
@@ -607,10 +853,10 @@
         <p class="artist" id="artistPreview"></p>
     </div>
 
-    <!-- Hover zone for details panel -->
+    <!-- Hover zone for details panel - bottom right corner -->
     <div class="hover-zone" id="hoverZone"></div>
 
-    <!-- Details Panel - Bottom Right -->
+    <!-- Details Panel - Bottom Right (appears on painting hover or corner hover) -->
     <div class="details-panel" id="detailsPanel">
         <div class="meta-grid">
             <span class="meta-label">Year</span>
@@ -1126,6 +1372,30 @@
         let textureLoader;
         let loadedTextures = {};
         let spotlight;
+        let dynamicLight; // Light that follows cursor
+        let raycaster, mouse; // For detecting hover over painting
+
+        // Gallery mode state
+        let isGalleryMode = false;
+        let galleryGroup; // Group containing all gallery thumbnails
+        let galleryPaintings = []; // Array of painting meshes in gallery view
+        let galleryWall; // Larger wall for gallery view
+        const GALLERY_SPACING = 0.3; // Space between paintings
+        const GALLERY_THUMB_SIZE = 1.2; // Max size of thumbnails
+
+        // Responsive gallery columns
+        function getGalleryCols() {
+            if (window.innerWidth <= 480) return 3;
+            if (window.innerWidth <= 768) return 4;
+            if (window.innerWidth <= 1024) return 6;
+            return 8;
+        }
+
+        // Touch/swipe state
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let isSwiping = false;
 
         // Initialize
         function init() {
@@ -1156,6 +1426,9 @@
             // Build scene
             createEnvironment();
             createLighting();
+
+            // Create gallery view (loads all thumbnails in background)
+            createGalleryView();
 
             // Load first painting with elegant entrance
             loadPainting(currentIndex, (painting) => {
@@ -1196,30 +1469,371 @@
                 metalness: 0
             });
             const wall = new THREE.Mesh(wallGeometry, wallMaterial);
-            wall.position.z = -0.5;
+            wall.position.z = -0.12; // Closer to painting for tighter shadow
             wall.receiveShadow = true;
             scene.add(wall);
 
             // Painting group (for animation)
             paintingGroup = new THREE.Group();
             scene.add(paintingGroup);
+
+            // Initialize raycaster for painting hover detection
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
         }
 
         function createLighting() {
             // Bright, even ambient light - clean museum lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
             scene.add(ambient);
 
-            // Subtle directional light for very soft shadow
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
-            dirLight.position.set(2, 4, 3);
-            dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 1024;
-            dirLight.shadow.mapSize.height = 1024;
-            dirLight.shadow.bias = -0.001;
-            dirLight.shadow.normalBias = 0.02;
-            dirLight.shadow.radius = 4; // Soft shadow
-            scene.add(dirLight);
+            // Dynamic light that follows cursor
+            dynamicLight = new THREE.PointLight(0xffffff, 0.6, 20);
+            dynamicLight.position.set(0, 2, 4);
+            dynamicLight.castShadow = true;
+            dynamicLight.shadow.mapSize.width = 1024;
+            dynamicLight.shadow.mapSize.height = 1024;
+            dynamicLight.shadow.bias = -0.002;
+            dynamicLight.shadow.radius = 3; // Soft shadow
+            dynamicLight.shadow.camera.near = 0.5;
+            dynamicLight.shadow.camera.far = 15;
+            scene.add(dynamicLight);
+
+            // Subtle fill light from below to soften shadows
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.15);
+            fillLight.position.set(0, -2, 2);
+            scene.add(fillLight);
+        }
+
+        // ==================== GALLERY MODE ====================
+
+        function createGalleryView() {
+            // Create group for gallery thumbnails
+            galleryGroup = new THREE.Group();
+            galleryGroup.visible = false;
+            scene.add(galleryGroup);
+
+            // Create larger wall for gallery view
+            const wallGeometry = new THREE.PlaneGeometry(50, 30);
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0xfafafa,
+                roughness: 1,
+                metalness: 0
+            });
+            galleryWall = new THREE.Mesh(wallGeometry, wallMaterial);
+            galleryWall.position.z = -1;
+            galleryWall.receiveShadow = true;
+            galleryWall.visible = false;
+            scene.add(galleryWall);
+
+            // Calculate grid layout (responsive columns)
+            const cols = getGalleryCols();
+            const totalPaintings = paintings.length;
+            const rows = Math.ceil(totalPaintings / cols);
+            const gridWidth = cols * (GALLERY_THUMB_SIZE + GALLERY_SPACING) - GALLERY_SPACING;
+            const gridHeight = rows * (GALLERY_THUMB_SIZE + GALLERY_SPACING) - GALLERY_SPACING;
+            const startX = -gridWidth / 2 + GALLERY_THUMB_SIZE / 2;
+            const startY = gridHeight / 2 - GALLERY_THUMB_SIZE / 2;
+
+            // Load all paintings as thumbnails
+            paintings.forEach((painting, index) => {
+                const col = index % cols;
+                const row = Math.floor(index / cols);
+                const x = startX + col * (GALLERY_THUMB_SIZE + GALLERY_SPACING);
+                const y = startY - row * (GALLERY_THUMB_SIZE + GALLERY_SPACING);
+
+                // Create placeholder while loading
+                const placeholderGeom = new THREE.PlaneGeometry(GALLERY_THUMB_SIZE, GALLERY_THUMB_SIZE);
+                const placeholderMat = new THREE.MeshStandardMaterial({
+                    color: 0xf0f0f0,
+                    roughness: 1
+                });
+                const placeholder = new THREE.Mesh(placeholderGeom, placeholderMat);
+                placeholder.position.set(x, y, 0);
+                placeholder.userData = { index, isGalleryItem: true };
+                galleryGroup.add(placeholder);
+                galleryPaintings[index] = placeholder;
+
+                // Load actual texture
+                textureLoader.load(`Cropped/${painting.file}`, (texture) => {
+                    const aspect = texture.image.width / texture.image.height;
+                    let width, height;
+                    if (aspect > 1) {
+                        width = GALLERY_THUMB_SIZE;
+                        height = GALLERY_THUMB_SIZE / aspect;
+                    } else {
+                        height = GALLERY_THUMB_SIZE;
+                        width = GALLERY_THUMB_SIZE * aspect;
+                    }
+
+                    // Update geometry and material
+                    const newGeom = new THREE.PlaneGeometry(width, height);
+                    const newMat = new THREE.MeshStandardMaterial({
+                        map: texture,
+                        roughness: 0.8
+                    });
+
+                    placeholder.geometry.dispose();
+                    placeholder.material.dispose();
+                    placeholder.geometry = newGeom;
+                    placeholder.material = newMat;
+                    placeholder.castShadow = true;
+
+                    // Store texture
+                    if (!loadedTextures[index]) {
+                        loadedTextures[index] = texture;
+                    }
+                });
+            });
+        }
+
+        // Rebuild gallery grid when columns change (responsive)
+        function rebuildGalleryGrid() {
+            if (!galleryGroup) return;
+
+            const cols = getGalleryCols();
+            const rows = Math.ceil(paintings.length / cols);
+            const gridWidth = cols * (GALLERY_THUMB_SIZE + GALLERY_SPACING) - GALLERY_SPACING;
+            const gridHeight = rows * (GALLERY_THUMB_SIZE + GALLERY_SPACING) - GALLERY_SPACING;
+            const startX = -gridWidth / 2 + GALLERY_THUMB_SIZE / 2;
+            const startY = gridHeight / 2 - GALLERY_THUMB_SIZE / 2;
+
+            // Reposition existing paintings
+            galleryPaintings.forEach((painting, index) => {
+                if (painting) {
+                    const col = index % cols;
+                    const row = Math.floor(index / cols);
+                    const x = startX + col * (GALLERY_THUMB_SIZE + GALLERY_SPACING);
+                    const y = startY - row * (GALLERY_THUMB_SIZE + GALLERY_SPACING);
+
+                    gsap.to(painting.position, {
+                        x: x,
+                        y: y,
+                        duration: 0.5,
+                        ease: "power2.out"
+                    });
+                }
+            });
+
+            // Update camera if in gallery mode
+            if (isGalleryMode) {
+                const cameraZ = Math.max(gridHeight * 1.2, gridWidth * 0.8, 10);
+                gsap.to(camera.position, {
+                    z: cameraZ,
+                    duration: 0.5,
+                    ease: "power2.out"
+                });
+            }
+        }
+
+        function toggleGalleryMode() {
+            if (isAnimating) return;
+
+            if (isGalleryMode) {
+                exitGalleryMode();
+            } else {
+                enterGalleryMode();
+            }
+        }
+
+        function enterGalleryMode() {
+            if (isAnimating || isGalleryMode) return;
+            isAnimating = true;
+            isGalleryMode = true;
+
+            document.body.classList.add('gallery-mode');
+            document.getElementById('viewAllText').textContent = 'Close';
+            document.getElementById('detailsPanel').classList.remove('visible');
+
+            // Disable shadow updates during transition and set neutral light position
+            renderer.shadowMap.autoUpdate = false;
+            gsap.to(dynamicLight.position, { x: 0, y: 2, duration: 0.5, ease: "power2.out" });
+
+            // Calculate camera position to see all paintings (responsive)
+            const cols = getGalleryCols();
+            const rows = Math.ceil(paintings.length / cols);
+            const gridHeight = rows * (GALLERY_THUMB_SIZE + GALLERY_SPACING);
+            const gridWidth = cols * (GALLERY_THUMB_SIZE + GALLERY_SPACING);
+            const cameraZ = Math.max(gridHeight * 1.2, gridWidth * 0.8, 10);
+
+            // Show gallery elements
+            galleryGroup.visible = true;
+            galleryWall.visible = true;
+
+            // Animate current painting out
+            if (currentPainting) {
+                gsap.to(currentPainting.scale, {
+                    x: 0.5,
+                    y: 0.5,
+                    z: 0.5,
+                    duration: 0.6,
+                    ease: "power2.inOut"
+                });
+                gsap.to(currentPainting.children[0].material, {
+                    opacity: 0,
+                    duration: 0.4,
+                    ease: "power2.in"
+                });
+            }
+
+            // Animate camera zoom out
+            gsap.to(camera.position, {
+                x: 0,
+                y: 0,
+                z: cameraZ,
+                duration: 1.2,
+                ease: "power3.inOut",
+                onComplete: () => {
+                    if (currentPainting) {
+                        currentPainting.visible = false;
+                    }
+                    isAnimating = false;
+                    // Re-enable shadow updates after transition
+                    renderer.shadowMap.autoUpdate = false;
+                    needsShadowUpdate = true;
+                }
+            });
+
+            // Fade in gallery items
+            galleryPaintings.forEach((painting, i) => {
+                if (painting && painting.material) {
+                    painting.material.transparent = true;
+                    painting.material.opacity = 0;
+                    gsap.to(painting.material, {
+                        opacity: 1,
+                        duration: 0.8,
+                        delay: 0.3 + i * 0.02,
+                        ease: "power2.out"
+                    });
+                }
+            });
+
+            // Move light back for even gallery lighting
+            gsap.to(dynamicLight.position, {
+                z: cameraZ - 2,
+                duration: 1.2,
+                ease: "power3.inOut"
+            });
+        }
+
+        function exitGalleryMode(targetIndex = null) {
+            if (isAnimating || !isGalleryMode) return;
+            isAnimating = true;
+
+            // Disable shadow updates during transition and set neutral light position
+            renderer.shadowMap.autoUpdate = false;
+            gsap.to(dynamicLight.position, { x: 0, y: 2, z: 4, duration: 0.5, ease: "power2.out" });
+
+            document.body.classList.remove('gallery-mode');
+            document.getElementById('viewAllText').textContent = 'View All';
+
+            // Update current index if a painting was clicked
+            if (targetIndex !== null) {
+                currentIndex = targetIndex;
+            }
+
+            // Prepare current painting
+            if (currentPainting) {
+                paintingGroup.remove(currentPainting);
+            }
+
+            // Load the target painting
+            loadPainting(currentIndex, (painting) => {
+                currentPainting = painting;
+                currentPainting.visible = false;
+                paintingGroup.add(currentPainting);
+
+                // Get the gallery thumbnail position for smooth transition
+                const thumbPos = galleryPaintings[currentIndex]?.position || { x: 0, y: 0 };
+
+                // Position painting at thumbnail location initially
+                currentPainting.position.set(thumbPos.x, thumbPos.y, 0);
+                currentPainting.scale.set(0.3, 0.3, 0.3);
+                currentPainting.children[0].material.transparent = true;
+                currentPainting.children[0].material.opacity = 0;
+                currentPainting.visible = true;
+
+                // Fade out gallery items
+                galleryPaintings.forEach((p, i) => {
+                    if (p && p.material) {
+                        gsap.to(p.material, {
+                            opacity: 0,
+                            duration: 0.4,
+                            ease: "power2.in"
+                        });
+                    }
+                });
+
+                // Animate camera to single view
+                gsap.to(camera.position, {
+                    x: 0,
+                    y: 0,
+                    z: 7,
+                    duration: 1.2,
+                    ease: "power3.inOut"
+                });
+
+                // Animate painting to center
+                gsap.to(currentPainting.position, {
+                    x: 0,
+                    y: 0,
+                    z: 0,
+                    duration: 1.2,
+                    ease: "power3.inOut"
+                });
+
+                gsap.to(currentPainting.scale, {
+                    x: 1,
+                    y: 1,
+                    z: 1,
+                    duration: 1.2,
+                    ease: "power3.inOut"
+                });
+
+                gsap.to(currentPainting.children[0].material, {
+                    opacity: 1,
+                    duration: 0.8,
+                    delay: 0.4,
+                    ease: "power2.out",
+                    onComplete: () => {
+                        galleryGroup.visible = false;
+                        galleryWall.visible = false;
+                        isGalleryMode = false;
+                        isAnimating = false;
+                        updateUI();
+                        // Re-enable shadow updates after transition
+                        renderer.shadowMap.autoUpdate = false;
+                        needsShadowUpdate = true;
+                    }
+                });
+
+                // Move light back
+                gsap.to(dynamicLight.position, {
+                    z: 4,
+                    duration: 1.2,
+                    ease: "power3.inOut"
+                });
+            });
+        }
+
+        function handleGalleryClick(event) {
+            if (!isGalleryMode || isAnimating) return;
+
+            // Update mouse position
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Raycast to gallery paintings
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(galleryPaintings.filter(p => p), true);
+
+            if (intersects.length > 0) {
+                const clickedPainting = intersects[0].object;
+                const index = clickedPainting.userData.index;
+                if (index !== undefined) {
+                    exitGalleryMode(index);
+                }
+            }
         }
 
         function preloadTexture(index) {
@@ -1267,12 +1881,12 @@
                 canvas.receiveShadow = true;
                 group.add(canvas);
 
-                // Shadow caster - slightly visible dark edge to simulate frame depth
-                const shadowMargin = 0.08;
+                // Shadow caster - thin frame depth for tight shadow
+                const shadowMargin = 0.04;
                 const shadowCasterGeom = new THREE.BoxGeometry(
                     width + shadowMargin * 2,
                     height + shadowMargin * 2,
-                    0.08  // Depth for shadow
+                    0.06  // Depth for shadow - close to wall
                 );
                 const shadowCasterMat = new THREE.MeshStandardMaterial({
                     color: 0x1a1a1a,
@@ -1281,7 +1895,7 @@
                     side: THREE.FrontSide
                 });
                 const shadowCaster = new THREE.Mesh(shadowCasterGeom, shadowCasterMat);
-                shadowCaster.position.z = 0.04;
+                shadowCaster.position.z = -0.03; // Closer to wall
                 shadowCaster.castShadow = true;
                 shadowCaster.receiveShadow = false;
                 group.add(shadowCaster);
@@ -1420,29 +2034,54 @@
 
         function setupEvents() {
             // Window resize
+            let resizeTimeout;
+            let lastCols = getGalleryCols();
+
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
+
+                // Debounced gallery rebuild on significant resize (column change)
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    const newCols = getGalleryCols();
+                    if (newCols !== lastCols) {
+                        lastCols = newCols;
+                        rebuildGalleryGrid();
+                    }
+                }, 300);
             });
 
             // Keyboard
             window.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowLeft') navigate(-1);
-                if (e.key === 'ArrowRight') navigate(1);
-                if (e.key === 'Escape') closeZoom();
+                if (e.key === 'Escape') {
+                    if (isGalleryMode) {
+                        exitGalleryMode();
+                    } else {
+                        closeZoom();
+                    }
+                }
+                // Navigation only in single view mode
+                if (!isGalleryMode) {
+                    if (e.key === 'ArrowLeft') navigate(-1);
+                    if (e.key === 'ArrowRight') navigate(1);
+                }
+                // G key to toggle gallery
+                if (e.key === 'g' || e.key === 'G') {
+                    toggleGalleryMode();
+                }
             });
 
-            // Details panel hover
-            const hoverZone = document.getElementById('hoverZone');
+            // Details panel hover - triggered by corner hover zone, painting hover, or panel hover
             const detailsPanel = document.getElementById('detailsPanel');
+            const hoverZone = document.getElementById('hoverZone');
 
+            // Corner hover zone
             hoverZone.addEventListener('mouseenter', () => {
-                detailsPanel.classList.add('visible');
-            });
-
-            detailsPanel.addEventListener('mouseenter', () => {
-                detailsPanel.classList.add('visible');
+                if (!isGalleryMode) {
+                    detailsPanel.classList.add('visible');
+                }
             });
 
             hoverZone.addEventListener('mouseleave', (e) => {
@@ -1451,22 +2090,22 @@
                 }
             });
 
+            // Details panel itself
+            detailsPanel.addEventListener('mouseenter', () => {
+                detailsPanel.classList.add('visible');
+            });
+
             detailsPanel.addEventListener('mouseleave', () => {
                 detailsPanel.classList.remove('visible');
             });
 
-            // Click to zoom
-            renderer.domElement.addEventListener('click', () => {
-                openZoom();
-            });
-
-            // Click hint on painting hover
-            renderer.domElement.addEventListener('mouseenter', () => {
-                document.getElementById('clickHint').classList.add('visible');
-            });
-
-            renderer.domElement.addEventListener('mouseleave', () => {
-                document.getElementById('clickHint').classList.remove('visible');
+            // Click handler - different behavior in gallery mode vs single view
+            renderer.domElement.addEventListener('click', (event) => {
+                if (isGalleryMode) {
+                    handleGalleryClick(event);
+                } else {
+                    openZoom();
+                }
             });
 
             // Zoom overlay click to close
@@ -1476,19 +2115,161 @@
                 }
             });
 
-            // Very subtle parallax on mouse move - minimal
+            // Mouse move: light follows cursor, detect painting hover, subtle parallax
             window.addEventListener('mousemove', (e) => {
-                if (isAnimating) return;
-                const x = (e.clientX / window.innerWidth - 0.5) * 0.05;
-                const y = (e.clientY / window.innerHeight - 0.5) * 0.03;
+                // Update mouse position for raycasting
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-                gsap.to(camera.position, {
-                    x: x,
-                    y: -y,
-                    duration: 1.5,
-                    ease: "power2.out"
-                });
+                // Light follows cursor - but NOT during transitions to prevent flickering
+                if (!isAnimating) {
+                    const lightRange = isGalleryMode ? 15 : 6;
+                    const lightX = (e.clientX / window.innerWidth - 0.5) * lightRange;
+                    const lightY = (e.clientY / window.innerHeight - 0.5) * -lightRange * 0.6 + 1;
+
+                    gsap.to(dynamicLight.position, {
+                        x: lightX,
+                        y: lightY,
+                        duration: 0.3,
+                        ease: "power2.out",
+                        onUpdate: () => {
+                            needsShadowUpdate = true;
+                        }
+                    });
+                }
+
+                // Gallery mode hover detection
+                if (isGalleryMode && !isAnimating) {
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(galleryPaintings.filter(p => p), true);
+
+                    if (intersects.length > 0) {
+                        document.body.classList.add('hovering-painting');
+                        // Subtle scale on hover
+                        const hoveredPainting = intersects[0].object;
+                        galleryPaintings.forEach((p, i) => {
+                            if (p && p !== hoveredPainting) {
+                                gsap.to(p.scale, { x: 1, y: 1, duration: 0.3 });
+                            }
+                        });
+                        gsap.to(hoveredPainting.scale, { x: 1.08, y: 1.08, duration: 0.3 });
+                    } else {
+                        document.body.classList.remove('hovering-painting');
+                        galleryPaintings.forEach((p) => {
+                            if (p) gsap.to(p.scale, { x: 1, y: 1, duration: 0.3 });
+                        });
+                    }
+                }
+
+                // Single view - detect if hovering over painting
+                if (!isGalleryMode && currentPainting && !isAnimating) {
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(currentPainting.children, true);
+
+                    if (intersects.length > 0) {
+                        // Hovering over painting - show details and click hint
+                        detailsPanel.classList.add('visible');
+                        document.getElementById('clickHint').classList.add('visible');
+                    } else {
+                        // Not hovering over painting
+                        if (!detailsPanel.matches(':hover')) {
+                            detailsPanel.classList.remove('visible');
+                        }
+                        document.getElementById('clickHint').classList.remove('visible');
+                    }
+                }
+
+                // Subtle camera parallax (only in single view mode)
+                if (!isAnimating && !isGalleryMode) {
+                    const camX = (e.clientX / window.innerWidth - 0.5) * 0.05;
+                    const camY = (e.clientY / window.innerHeight - 0.5) * 0.03;
+
+                    gsap.to(camera.position, {
+                        x: camX,
+                        y: -camY,
+                        duration: 1.5,
+                        ease: "power2.out"
+                    });
+                }
             });
+
+            // Hide details when mouse leaves window
+            document.addEventListener('mouseleave', () => {
+                detailsPanel.classList.remove('visible');
+                document.getElementById('clickHint').classList.remove('visible');
+            });
+
+            // ==================== TOUCH/SWIPE SUPPORT ====================
+
+            // Touch start
+            renderer.domElement.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                isSwiping = false;
+            }, { passive: true });
+
+            // Touch move - detect swipe
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                if (!touchStartX) return;
+
+                touchEndX = e.touches[0].clientX;
+                const diffX = touchStartX - touchEndX;
+                const diffY = Math.abs(touchStartY - e.touches[0].clientY);
+
+                // Only swipe if horizontal movement > vertical
+                if (Math.abs(diffX) > 30 && Math.abs(diffX) > diffY) {
+                    isSwiping = true;
+                }
+            }, { passive: true });
+
+            // Touch end - execute swipe or tap
+            renderer.domElement.addEventListener('touchend', (e) => {
+                if (isSwiping && !isGalleryMode) {
+                    const diffX = touchStartX - touchEndX;
+                    if (diffX > 50) {
+                        // Swipe left - next painting
+                        navigate(1);
+                    } else if (diffX < -50) {
+                        // Swipe right - previous painting
+                        navigate(-1);
+                    }
+                } else if (!isSwiping) {
+                    // It was a tap, not a swipe
+                    if (isGalleryMode) {
+                        // Handle gallery tap
+                        const touch = e.changedTouches[0];
+                        mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
+                        mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
+                        raycaster.setFromCamera(mouse, camera);
+                        const intersects = raycaster.intersectObjects(galleryPaintings.filter(p => p), true);
+
+                        if (intersects.length > 0) {
+                            const index = intersects[0].object.userData.index;
+                            if (index !== undefined) {
+                                exitGalleryMode(index);
+                            }
+                        }
+                    } else {
+                        // Toggle details panel on tap (mobile)
+                        if ('ontouchstart' in window) {
+                            detailsPanel.classList.toggle('visible');
+                        }
+                    }
+                }
+
+                // Reset
+                touchStartX = 0;
+                touchStartY = 0;
+                touchEndX = 0;
+                isSwiping = false;
+            }, { passive: true });
+
+            // Prevent default touch behaviors that might interfere
+            renderer.domElement.addEventListener('touchmove', (e) => {
+                if (isSwiping) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
         }
 
         // Shadow update flag for optimization
