@@ -1,0 +1,11 @@
+.vercel
+.env*.local
+.claude/
+tmpclaude-*
+nul
+*.HEIC
+PNG/
+not for sale/
+*_debug.png
+*.py
+corrections.json

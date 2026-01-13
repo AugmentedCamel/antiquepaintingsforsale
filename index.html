@@ -3,7 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galerie</title>
+    <title>Galerie - Antique Paintings Collection</title>
+    <meta name="description" content="A curated collection of antique paintings including works attributed to Jan Toorop, Dutch Golden Age masters, and Art Deco artists. Available for private sale.">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Galerie - Antique Paintings Collection">
+    <meta property="og:description" content="A curated collection of antique paintings including works attributed to Jan Toorop, Dutch Golden Age masters, and Art Deco artists.">
+    <meta property="og:image" content="https://antiquepaintings.vercel.app/og-image.jpg">
+    <meta property="og:url" content="https://antiquepaintings.vercel.app">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Galerie - Antique Paintings Collection">
+    <meta name="twitter:description" content="A curated collection of antique paintings including works attributed to Jan Toorop, Dutch Golden Age masters, and Art Deco artists.">
+    <meta name="twitter:image" content="https://antiquepaintings.vercel.app/og-image.jpg">
+
     <!-- Swiss Typography - DM Sans (similar to Helvetica/Akzidenz-Grotesk) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,6 +82,7 @@
             left: 0;
             width: 100%;
             height: 100%;
+            z-index: 1;
         }
 
         /* Navigation Arrows - Swiss minimalist */
@@ -449,6 +465,35 @@
             pointer-events: none;
         }
 
+        /* Mobile info button - hidden on desktop */
+        .mobile-info-btn {
+            display: none;
+            position: fixed;
+            bottom: var(--space-5);
+            right: var(--space-5);
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            z-index: 90;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .mobile-info-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        body.gallery-mode .mobile-info-btn {
+            display: none !important;
+        }
+
         /* Zoom overlay - Swiss Editorial */
         .zoom-overlay {
             position: fixed;
@@ -771,6 +816,11 @@
                 height: 80px;
             }
 
+            /* Show info button on mobile */
+            .mobile-info-btn {
+                display: flex;
+            }
+
             /* Mobile tap hint */
             .click-hint {
                 bottom: 100px;
@@ -879,6 +929,15 @@
 
     <!-- Hover zone for details panel - bottom right corner -->
     <div class="hover-zone" id="hoverZone"></div>
+
+    <!-- Mobile info button - shows details panel on tap -->
+    <button class="mobile-info-btn" id="mobileInfoBtn" aria-label="Show painting details">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+    </button>
 
     <!-- Details Panel - Bottom Right (appears on painting hover or corner hover) -->
     <div class="details-panel" id="detailsPanel">
@@ -2136,6 +2195,33 @@
             detailsPanel.addEventListener('mouseleave', () => {
                 detailsPanel.classList.remove('visible');
             });
+
+            // Mobile touch support for hover zone - tap to toggle details panel
+            hoverZone.addEventListener('touchstart', (e) => {
+                if (!isGalleryMode) {
+                    e.preventDefault();
+                    detailsPanel.classList.toggle('visible');
+                }
+            }, { passive: false });
+
+            // Mobile info button - tap to toggle details panel
+            const mobileInfoBtn = document.getElementById('mobileInfoBtn');
+            mobileInfoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!isGalleryMode) {
+                    detailsPanel.classList.toggle('visible');
+                }
+            });
+
+            // Tap outside details panel to close on mobile
+            document.addEventListener('touchstart', (e) => {
+                if (detailsPanel.classList.contains('visible') &&
+                    !detailsPanel.contains(e.target) &&
+                    !hoverZone.contains(e.target) &&
+                    !mobileInfoBtn.contains(e.target)) {
+                    detailsPanel.classList.remove('visible');
+                }
+            }, { passive: true });
 
             // Click handler - different behavior in gallery mode vs single view
             renderer.domElement.addEventListener('click', (event) => {
