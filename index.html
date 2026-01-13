@@ -643,6 +643,41 @@
             transition: all 0.3s ease;
         }
 
+        /* Live viewers indicator */
+        .live-indicator {
+            position: fixed;
+            top: var(--space-5);
+            right: var(--space-6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            font-size: var(--font-size-xs);
+            color: var(--color-text-secondary);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+        }
+
+        .live-count {
+            font-weight: 500;
+            letter-spacing: 0.05em;
+        }
+
+        body.gallery-mode .live-indicator {
+            display: none;
+        }
+
         .gallery-name:hover .view-all {
             opacity: 1;
             transform: translateY(0);
@@ -895,6 +930,12 @@
     <div class="gallery-name" id="galleryToggle" onclick="toggleGalleryMode()">
         <span>Galerie</span>
         <span class="view-all" id="viewAllText">View All</span>
+    </div>
+
+    <!-- Live viewers indicator -->
+    <div class="live-indicator" id="liveIndicator">
+        <span class="live-dot"></span>
+        <span class="live-count"><span id="viewerCount">1</span> viewing</span>
     </div>
 
     <!-- Gallery mode instruction -->
@@ -2510,6 +2551,105 @@
 
         // Start
         init();
+
+        // ============================================
+        // LIVE VIEWER TRACKING
+        // ============================================
+
+        // Simple presence system using BroadcastChannel for same-device tabs
+        // and localStorage heartbeat for cross-session approximation
+        const HEARTBEAT_INTERVAL = 5000; // 5 seconds
+        const PRESENCE_TIMEOUT = 15000; // Consider viewer gone after 15 seconds
+        const sessionId = Math.random().toString(36).substring(2);
+
+        // Store presence data
+        function updatePresence() {
+            const now = Date.now();
+            const presenceKey = `gallery_presence_${sessionId}`;
+            const paintingKey = `viewing_${paintings[currentIndex]?.id || currentIndex}`;
+
+            // Update our heartbeat
+            localStorage.setItem(presenceKey, JSON.stringify({
+                timestamp: now,
+                painting: currentIndex,
+                session: sessionId
+            }));
+
+            // Count active viewers
+            let activeViewers = 0;
+            const currentPaintingIndex = currentIndex;
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('gallery_presence_')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if (data && (now - data.timestamp) < PRESENCE_TIMEOUT) {
+                            if (data.painting === currentPaintingIndex) {
+                                activeViewers++;
+                            }
+                        } else if (key !== presenceKey) {
+                            // Clean up stale entries
+                            localStorage.removeItem(key);
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            // Update viewer count display
+            const viewerCountEl = document.getElementById('viewerCount');
+            if (viewerCountEl) {
+                viewerCountEl.textContent = Math.max(1, activeViewers);
+            }
+        }
+
+        // Track painting view with Vercel Analytics
+        function trackPaintingView(painting, index) {
+            // Vercel Analytics custom event (if available)
+            if (typeof window.va === 'function') {
+                window.va('event', {
+                    name: 'painting_view',
+                    data: {
+                        painting_id: painting.id,
+                        painting_title: painting.title,
+                        painting_artist: painting.artist,
+                        index: index
+                    }
+                });
+            }
+
+            // Update presence
+            updatePresence();
+        }
+
+        // Start heartbeat
+        setInterval(updatePresence, HEARTBEAT_INTERVAL);
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            localStorage.removeItem(`gallery_presence_${sessionId}`);
+        });
+
+        // Initial presence update
+        setTimeout(updatePresence, 100);
+
+        // Track view when painting changes (hook into existing navigate function)
+        const originalNavigate = navigate;
+        navigate = function(direction) {
+            originalNavigate(direction);
+            setTimeout(() => {
+                if (paintings[currentIndex]) {
+                    trackPaintingView(paintings[currentIndex], currentIndex);
+                }
+            }, 500);
+        };
+    </script>
+
+    <!-- Vercel Analytics -->
+    <script defer src="/_vercel/insights/script.js"></script>
+    <script>
+        // Vercel Analytics initialization
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
     </script>
 </body>
 </html>
