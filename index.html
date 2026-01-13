@@ -1554,8 +1554,9 @@
                 galleryGroup.add(placeholder);
                 galleryPaintings[index] = placeholder;
 
-                // Load actual texture
-                textureLoader.load(`Cropped/${painting.file}`, (texture) => {
+                // Load thumbnail texture for gallery (much faster loading)
+                const thumbFile = painting.file.replace('_cropped.png', '_cropped.jpg');
+                textureLoader.load(`Cropped/thumbs/${thumbFile}`, (texture) => {
                     const aspect = texture.image.width / texture.image.height;
                     let width, height;
                     if (aspect > 1) {
@@ -1578,11 +1579,6 @@
                     placeholder.geometry = newGeom;
                     placeholder.material = newMat;
                     placeholder.castShadow = true;
-
-                    // Store texture
-                    if (!loadedTextures[index]) {
-                        loadedTextures[index] = texture;
-                    }
                 });
             });
         }
