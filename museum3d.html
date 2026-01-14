@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Museum Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            background: #000;
+        }
+        #canvas {
+            display: block;
+        }
+
+        /* Instructions overlay */
+        #instructions {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            cursor: pointer;
+        }
+        #instructions.hidden {
+            display: none;
+        }
+        .instructions-content {
+            text-align: center;
+            color: white;
+            font-family: Georgia, serif;
+        }
+        .instructions-content h1 {
+            font-size: 3rem;
+            font-weight: 300;
+            color: #d4af37;
+            margin-bottom: 30px;
+            letter-spacing: 5px;
+        }
+        .instructions-content p {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #aaa;
+        }
+        .instructions-content .keys {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 30px 0;
+        }
+        .key {
+            width: 50px;
+            height: 50px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: monospace;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+        .start-btn {
+            margin-top: 40px;
+            padding: 15px 50px;
+            font-size: 1.2rem;
+            background: #d4af37;
+            color: #000;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: Georgia, serif;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+        .start-btn:hover {
+            background: #e5c453;
+            transform: scale(1.05);
+        }
+
+        /* Painting info panel */
+        #paintingInfo {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 20px 40px;
+            border-radius: 10px;
+            text-align: center;
+            font-family: Georgia, serif;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 50;
+        }
+        #paintingInfo.visible {
+            opacity: 1;
+        }
+        #paintingInfo h2 {
+            color: #d4af37;
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+        #paintingInfo p {
+            color: #aaa;
+            font-size: 0.95rem;
+        }
+
+        /* Crosshair */
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.5;
+        }
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: white;
+        }
+        #crosshair::before {
+            width: 2px;
+            height: 20px;
+            left: 9px;
+            top: 0;
+        }
+        #crosshair::after {
+            width: 20px;
+            height: 2px;
+            top: 9px;
+            left: 0;
+        }
+
+        /* Loading */
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #d4af37;
+            font-family: Georgia, serif;
+            font-size: 1.5rem;
+            z-index: 200;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading Museum...</div>
+
+    <div id="instructions">
+        <div class="instructions-content">
+            <h1>VIRTUAL MUSEUM</h1>
+            <p>Walk through the gallery and admire the collection</p>
+            <div class="keys">
+                <div class="key">W</div>
+                <div class="key">A</div>
+                <div class="key">S</div>
+                <div class="key">D</div>
+            </div>
+            <p>Use WASD to move, Mouse to look around</p>
+            <p style="color:#666; font-size:0.9rem;">Press ESC to release mouse</p>
+            <button class="start-btn" onclick="startExperience()">ENTER MUSEUM</button>
+        </div>
+    </div>
+
+    <div id="crosshair"></div>
+
+    <div id="paintingInfo">
+        <h2 id="infoTitle">Painting Title</h2>
+        <p id="infoDetails">Artist • Year • Medium</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Paintings data
+        const paintings = [
+            { file: "IMG_2653_cropped.png", title: "Landscape with Riders", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2656_cropped.png", title: "Castle Architecture", artist: "Unknown", year: "19th Century", medium: "Etching" },
+            { file: "IMG_2666_cropped.png", title: "Dutch Canal Scene", artist: "Unknown", year: "19th Century", medium: "Oil on panel" },
+            { file: "IMG_2667_cropped.png", title: "Harbor View", artist: "Unknown", year: "19th Century", medium: "Drawing" },
+            { file: "IMG_2668_cropped.png", title: "Amsterdam Canal", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2672_cropped.png", title: "Seascape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2675_cropped.png", title: "Portrait of a Lady", artist: "Unknown", year: "20th Century", medium: "Oil on canvas" },
+            { file: "IMG_2676_cropped.png", title: "Figure Study", artist: "Unknown", year: "20th Century", medium: "Mixed media" },
+            { file: "IMG_2680_cropped.png", title: "Maritime Scene", artist: "Unknown", year: "19th Century", medium: "Etching" },
+            { file: "IMG_2681_cropped.png", title: "Coastal View", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2684_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2685_cropped.png", title: "Rural Scene", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2686_cropped.png", title: "Interior", artist: "Unknown", year: "19th Century", medium: "Oil on panel" },
+            { file: "IMG_2689_cropped.png", title: "Portrait", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2692_cropped.png", title: "Religious Figure", artist: "Unknown", year: "19th Century", medium: "Drawing" },
+            { file: "IMG_2695_cropped.png", title: "Landscape View", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2696_cropped.png", title: "Still Life", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2699_cropped.png", title: "Composition", artist: "Unknown", year: "20th Century", medium: "Oil on canvas" },
+            { file: "IMG_2703_cropped.png", title: "Village Scene", artist: "Unknown", year: "19th Century", medium: "Oil on panel" },
+            { file: "IMG_2705_cropped.png", title: "Floral Study", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2710_cropped.png", title: "Abstract Figure", artist: "Unknown", year: "20th Century", medium: "Mixed media" },
+            { file: "IMG_2711_cropped.png", title: "Architectural Study", artist: "Unknown", year: "19th Century", medium: "Drawing" },
+            { file: "IMG_2713_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2714_cropped.png", title: "Seascape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2715_cropped.png", title: "Portrait Study", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2717_cropped.png", title: "Genre Scene", artist: "Unknown", year: "19th Century", medium: "Oil on panel" },
+            { file: "IMG_2723_cropped.png", title: "Church Interior", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2724_cropped.png", title: "Cathedral View", artist: "Unknown", year: "19th Century", medium: "Drawing" },
+            { file: "IMG_2725_cropped.png", title: "Still Life", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2729_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2730_cropped.png", title: "Sunflowers", artist: "Unknown", year: "20th Century", medium: "Oil on canvas" },
+            { file: "IMG_2731_cropped.png", title: "Floral Arrangement", artist: "Unknown", year: "20th Century", medium: "Oil on canvas" },
+            { file: "IMG_2732_cropped.png", title: "Abstract", artist: "Unknown", year: "20th Century", medium: "Oil on canvas" },
+            { file: "IMG_2733_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2736_cropped.png", title: "Panoramic View", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2739_cropped.png", title: "Antique Map of Zeeland", artist: "Unknown", year: "17th Century", medium: "Engraving" },
+            { file: "IMG_2741_cropped.png", title: "Figure Composition", artist: "Unknown", year: "20th Century", medium: "Oil on canvas" },
+            { file: "IMG_2746_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas" },
+            { file: "IMG_2748_cropped.png", title: "Still Life", artist: "Unknown", year: "19th Century", medium: "Oil on panel" }
+        ];
+
+        // Scene setup
+        let scene, camera, renderer;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let isLocked = false;
+        let paintingMeshes = [];
+        let raycaster = new THREE.Raycaster();
+
+        // Museum dimensions
+        const roomWidth = 60;
+        const roomLength = 100;
+        const roomHeight = 8;
+        const wallThickness = 0.3;
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+            scene.fog = new THREE.Fog(0x1a1a1a, 20, 80);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.7, roomLength / 2 - 5); // Start near entrance
+            camera.rotation.y = Math.PI; // Face into the museum
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            // Lighting
+            setupLighting();
+
+            // Build museum
+            buildMuseum();
+
+            // Load paintings
+            loadPaintings();
+
+            // Event listeners
+            setupControls();
+
+            // Hide loading
+            document.getElementById('loading').style.display = 'none';
+
+            // Animation loop
+            animate();
+        }
+
+        function setupLighting() {
+            // Ambient light
+            const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambient);
+
+            // Main ceiling lights
+            for (let z = -roomLength/2 + 10; z < roomLength/2; z += 15) {
+                // Left side
+                const spotLeft = new THREE.SpotLight(0xfff5e6, 0.8);
+                spotLeft.position.set(-roomWidth/4, roomHeight - 0.5, z);
+                spotLeft.angle = Math.PI / 4;
+                spotLeft.penumbra = 0.5;
+                spotLeft.castShadow = true;
+                spotLeft.target.position.set(-roomWidth/2 + 2, 2, z);
+                scene.add(spotLeft);
+                scene.add(spotLeft.target);
+
+                // Right side
+                const spotRight = new THREE.SpotLight(0xfff5e6, 0.8);
+                spotRight.position.set(roomWidth/4, roomHeight - 0.5, z);
+                spotRight.angle = Math.PI / 4;
+                spotRight.penumbra = 0.5;
+                spotRight.castShadow = true;
+                spotRight.target.position.set(roomWidth/2 - 2, 2, z);
+                scene.add(spotRight);
+                scene.add(spotRight.target);
+            }
+
+            // Point lights for general illumination
+            for (let z = -roomLength/2 + 15; z < roomLength/2; z += 20) {
+                const pointLight = new THREE.PointLight(0xfff8f0, 0.4, 25);
+                pointLight.position.set(0, roomHeight - 1, z);
+                scene.add(pointLight);
+            }
+        }
+
+        function buildMuseum() {
+            const textureLoader = new THREE.TextureLoader();
+
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomLength);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x2a2520,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Add floor pattern (parquet-like)
+            const floorLines = new THREE.Group();
+            const lineMaterial = new THREE.MeshBasicMaterial({ color: 0x1f1a16 });
+            for (let x = -roomWidth/2; x <= roomWidth/2; x += 2) {
+                const lineGeom = new THREE.PlaneGeometry(0.05, roomLength);
+                const line = new THREE.Mesh(lineGeom, lineMaterial);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(x, 0.001, 0);
+                floorLines.add(line);
+            }
+            scene.add(floorLines);
+
+            // Ceiling
+            const ceilingGeometry = new THREE.PlaneGeometry(roomWidth, roomLength);
+            const ceilingMaterial = new THREE.MeshStandardMaterial({
+                color: 0x3d3d3d,
+                roughness: 0.9
+            });
+            const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.y = roomHeight;
+            scene.add(ceiling);
+
+            // Wall material - museum gray/beige
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0xc4b5a0,
+                roughness: 0.9,
+                metalness: 0
+            });
+
+            // Left wall
+            const leftWall = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, roomHeight, roomLength),
+                wallMaterial
+            );
+            leftWall.position.set(-roomWidth/2, roomHeight/2, 0);
+            leftWall.receiveShadow = true;
+            scene.add(leftWall);
+
+            // Right wall
+            const rightWall = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, roomHeight, roomLength),
+                wallMaterial
+            );
+            rightWall.position.set(roomWidth/2, roomHeight/2, 0);
+            rightWall.receiveShadow = true;
+            scene.add(rightWall);
+
+            // Back wall
+            const backWall = new THREE.Mesh(
+                new THREE.BoxGeometry(roomWidth, roomHeight, wallThickness),
+                wallMaterial
+            );
+            backWall.position.set(0, roomHeight/2, -roomLength/2);
+            backWall.receiveShadow = true;
+            scene.add(backWall);
+
+            // Front wall (with entrance gap)
+            const frontWallLeft = new THREE.Mesh(
+                new THREE.BoxGeometry(roomWidth/2 - 3, roomHeight, wallThickness),
+                wallMaterial
+            );
+            frontWallLeft.position.set(-roomWidth/4 - 1.5, roomHeight/2, roomLength/2);
+            scene.add(frontWallLeft);
+
+            const frontWallRight = new THREE.Mesh(
+                new THREE.BoxGeometry(roomWidth/2 - 3, roomHeight, wallThickness),
+                wallMaterial
+            );
+            frontWallRight.position.set(roomWidth/4 + 1.5, roomHeight/2, roomLength/2);
+            scene.add(frontWallRight);
+
+            // Entrance header
+            const entranceHeader = new THREE.Mesh(
+                new THREE.BoxGeometry(6, 2, wallThickness),
+                wallMaterial
+            );
+            entranceHeader.position.set(0, roomHeight - 1, roomLength/2);
+            scene.add(entranceHeader);
+
+            // Baseboards
+            const baseboardMaterial = new THREE.MeshStandardMaterial({
+                color: 0x2a2520,
+                roughness: 0.7
+            });
+
+            // Left baseboard
+            const leftBaseboard = new THREE.Mesh(
+                new THREE.BoxGeometry(0.15, 0.3, roomLength),
+                baseboardMaterial
+            );
+            leftBaseboard.position.set(-roomWidth/2 + 0.2, 0.15, 0);
+            scene.add(leftBaseboard);
+
+            // Right baseboard
+            const rightBaseboard = new THREE.Mesh(
+                new THREE.BoxGeometry(0.15, 0.3, roomLength),
+                baseboardMaterial
+            );
+            rightBaseboard.position.set(roomWidth/2 - 0.2, 0.15, 0);
+            scene.add(rightBaseboard);
+
+            // Add some benches
+            addBench(0, -20);
+            addBench(0, 10);
+            addBench(0, 35);
+        }
+
+        function addBench(x, z) {
+            const benchGroup = new THREE.Group();
+
+            // Seat
+            const seatGeom = new THREE.BoxGeometry(4, 0.15, 1.2);
+            const seatMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
+            const seat = new THREE.Mesh(seatGeom, seatMat);
+            seat.position.y = 0.5;
+            seat.castShadow = true;
+            benchGroup.add(seat);
+
+            // Legs
+            const legGeom = new THREE.BoxGeometry(0.1, 0.5, 1);
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            const leg1 = new THREE.Mesh(legGeom, legMat);
+            leg1.position.set(-1.7, 0.25, 0);
+            benchGroup.add(leg1);
+            const leg2 = new THREE.Mesh(legGeom, legMat);
+            leg2.position.set(1.7, 0.25, 0);
+            benchGroup.add(leg2);
+
+            benchGroup.position.set(x, 0, z);
+            scene.add(benchGroup);
+        }
+
+        function loadPaintings() {
+            const textureLoader = new THREE.TextureLoader();
+            const paintingsPerWall = Math.ceil(paintings.length / 2);
+            const spacing = (roomLength - 10) / paintingsPerWall;
+
+            paintings.forEach((painting, index) => {
+                const isLeftWall = index < paintingsPerWall;
+                const wallIndex = isLeftWall ? index : index - paintingsPerWall;
+
+                textureLoader.load(`Cropped/${painting.file}`, (texture) => {
+                    // Calculate aspect ratio
+                    const aspect = texture.image.width / texture.image.height;
+                    const maxHeight = 2.5;
+                    const maxWidth = 3;
+
+                    let width, height;
+                    if (aspect > maxWidth / maxHeight) {
+                        width = maxWidth;
+                        height = maxWidth / aspect;
+                    } else {
+                        height = maxHeight;
+                        width = maxHeight * aspect;
+                    }
+
+                    // Create painting
+                    const geometry = new THREE.PlaneGeometry(width, height);
+                    const material = new THREE.MeshStandardMaterial({
+                        map: texture,
+                        roughness: 0.8,
+                        metalness: 0
+                    });
+                    const mesh = new THREE.Mesh(geometry, material);
+
+                    // Position on wall
+                    const z = -roomLength/2 + 8 + wallIndex * spacing;
+                    const y = 2.2;
+
+                    if (isLeftWall) {
+                        mesh.position.set(-roomWidth/2 + 0.2, y, z);
+                        mesh.rotation.y = Math.PI / 2;
+                    } else {
+                        mesh.position.set(roomWidth/2 - 0.2, y, z);
+                        mesh.rotation.y = -Math.PI / 2;
+                    }
+
+                    mesh.castShadow = true;
+                    mesh.userData = painting;
+                    paintingMeshes.push(mesh);
+                    scene.add(mesh);
+
+                    // Add frame
+                    addFrame(mesh, width, height);
+
+                    // Add spotlight for this painting
+                    addPaintingLight(mesh, isLeftWall);
+                });
+            });
+        }
+
+        function addFrame(paintingMesh, width, height) {
+            const frameDepth = 0.08;
+            const frameWidth = 0.12;
+            const frameMaterial = new THREE.MeshStandardMaterial({
+                color: 0x2a2520,
+                roughness: 0.6,
+                metalness: 0.1
+            });
+
+            const frameGroup = new THREE.Group();
+
+            // Top frame piece
+            const topFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(width + frameWidth * 2, frameWidth, frameDepth),
+                frameMaterial
+            );
+            topFrame.position.y = height / 2 + frameWidth / 2;
+            topFrame.position.z = frameDepth / 2;
+            frameGroup.add(topFrame);
+
+            // Bottom frame piece
+            const bottomFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(width + frameWidth * 2, frameWidth, frameDepth),
+                frameMaterial
+            );
+            bottomFrame.position.y = -height / 2 - frameWidth / 2;
+            bottomFrame.position.z = frameDepth / 2;
+            frameGroup.add(bottomFrame);
+
+            // Left frame piece
+            const leftFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(frameWidth, height, frameDepth),
+                frameMaterial
+            );
+            leftFrame.position.x = -width / 2 - frameWidth / 2;
+            leftFrame.position.z = frameDepth / 2;
+            frameGroup.add(leftFrame);
+
+            // Right frame piece
+            const rightFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(frameWidth, height, frameDepth),
+                frameMaterial
+            );
+            rightFrame.position.x = width / 2 + frameWidth / 2;
+            rightFrame.position.z = frameDepth / 2;
+            frameGroup.add(rightFrame);
+
+            frameGroup.position.copy(paintingMesh.position);
+            frameGroup.rotation.copy(paintingMesh.rotation);
+            scene.add(frameGroup);
+        }
+
+        function addPaintingLight(paintingMesh, isLeftWall) {
+            const light = new THREE.SpotLight(0xfff5e6, 0.6);
+            light.angle = Math.PI / 6;
+            light.penumbra = 0.5;
+            light.distance = 8;
+
+            const offsetX = isLeftWall ? 2 : -2;
+            light.position.set(
+                paintingMesh.position.x + offsetX,
+                paintingMesh.position.y + 2,
+                paintingMesh.position.z
+            );
+
+            light.target = paintingMesh;
+            scene.add(light);
+        }
+
+        function setupControls() {
+            // Pointer lock
+            document.addEventListener('click', () => {
+                if (!isLocked && document.getElementById('instructions').classList.contains('hidden')) {
+                    renderer.domElement.requestPointerLock();
+                }
+            });
+
+            document.addEventListener('pointerlockchange', () => {
+                isLocked = document.pointerLockElement === renderer.domElement;
+            });
+
+            // Mouse movement
+            document.addEventListener('mousemove', (event) => {
+                if (!isLocked) return;
+
+                const movementX = event.movementX || 0;
+                const movementY = event.movementY || 0;
+
+                camera.rotation.y -= movementX * 0.002;
+                camera.rotation.x -= movementY * 0.002;
+                camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+            });
+
+            // Keyboard
+            document.addEventListener('keydown', (event) => {
+                switch (event.code) {
+                    case 'KeyW': moveForward = true; break;
+                    case 'KeyS': moveBackward = true; break;
+                    case 'KeyA': moveLeft = true; break;
+                    case 'KeyD': moveRight = true; break;
+                }
+            });
+
+            document.addEventListener('keyup', (event) => {
+                switch (event.code) {
+                    case 'KeyW': moveForward = false; break;
+                    case 'KeyS': moveBackward = false; break;
+                    case 'KeyA': moveLeft = false; break;
+                    case 'KeyD': moveRight = false; break;
+                }
+            });
+
+            // Window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function startExperience() {
+            document.getElementById('instructions').classList.add('hidden');
+            renderer.domElement.requestPointerLock();
+        }
+
+        function checkPaintingInView() {
+            raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+            const intersects = raycaster.intersectObjects(paintingMeshes);
+
+            const infoPanel = document.getElementById('paintingInfo');
+
+            if (intersects.length > 0 && intersects[0].distance < 8) {
+                const painting = intersects[0].object.userData;
+                document.getElementById('infoTitle').textContent = painting.title;
+                document.getElementById('infoDetails').textContent =
+                    `${painting.artist} • ${painting.year} • ${painting.medium}`;
+                infoPanel.classList.add('visible');
+            } else {
+                infoPanel.classList.remove('visible');
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (isLocked) {
+                // Movement
+                const speed = 0.08;
+                velocity.x *= 0.9;
+                velocity.z *= 0.9;
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                if (moveForward || moveBackward) {
+                    velocity.z -= direction.z * speed;
+                }
+                if (moveLeft || moveRight) {
+                    velocity.x -= direction.x * speed;
+                }
+
+                // Apply movement relative to camera direction
+                const forward = new THREE.Vector3();
+                camera.getWorldDirection(forward);
+                forward.y = 0;
+                forward.normalize();
+
+                const right = new THREE.Vector3();
+                right.crossVectors(forward, new THREE.Vector3(0, 1, 0));
+
+                camera.position.add(forward.multiplyScalar(-velocity.z));
+                camera.position.add(right.multiplyScalar(-velocity.x));
+
+                // Collision with walls (simple boundary check)
+                const margin = 1.5;
+                camera.position.x = Math.max(-roomWidth/2 + margin, Math.min(roomWidth/2 - margin, camera.position.x));
+                camera.position.z = Math.max(-roomLength/2 + margin, Math.min(roomLength/2 - margin, camera.position.z));
+
+                // Keep at eye level
+                camera.position.y = 1.7;
+
+                // Check what painting we're looking at
+                checkPaintingInView();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Initialize
+        init();
+    </script>
+</body>
+</html>

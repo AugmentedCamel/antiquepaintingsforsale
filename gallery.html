@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Art Gallery</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: #1a1a1a;
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, #2d2d2d 0%, #1a1a1a 100%);
+            padding: 30px 50px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            color: #d4af37;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #888;
+            font-style: italic;
+            letter-spacing: 2px;
+        }
+
+        /* Gallery Grid */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 0;
+            padding: 0;
+        }
+
+        /* Each painting display */
+        .painting-container {
+            position: relative;
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .museum-wall {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Museum wall texture - warm gray with subtle gradient */
+            background:
+                linear-gradient(180deg,
+                    rgba(0,0,0,0.1) 0%,
+                    rgba(0,0,0,0) 20%,
+                    rgba(0,0,0,0) 80%,
+                    rgba(0,0,0,0.15) 100%
+                ),
+                linear-gradient(90deg,
+                    rgba(0,0,0,0.05) 0%,
+                    rgba(0,0,0,0) 50%,
+                    rgba(0,0,0,0.05) 100%
+                ),
+                #c4b5a0;
+        }
+
+        .painting-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 75%;
+            max-height: 80%;
+            /* Shadow for depth */
+            filter: drop-shadow(8px 12px 20px rgba(0,0,0,0.5));
+            transition: filter 0.3s ease, transform 0.3s ease;
+        }
+
+        .painting-container:hover .painting-frame {
+            filter: drop-shadow(12px 16px 30px rgba(0,0,0,0.6));
+            transform: translate(-50%, -50%) scale(1.02);
+        }
+
+        .painting-frame img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+        }
+
+        /* Painting info overlay */
+        .painting-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .painting-container:hover .painting-info {
+            opacity: 1;
+        }
+        .painting-info h3 {
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: #d4af37;
+            margin-bottom: 5px;
+        }
+        .painting-info p {
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .lightbox.active {
+            display: flex;
+        }
+        .lightbox-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 80vh;
+        }
+        .lightbox-wall {
+            /* Larger museum wall for lightbox */
+            background:
+                linear-gradient(180deg,
+                    rgba(0,0,0,0.15) 0%,
+                    rgba(0,0,0,0) 15%,
+                    rgba(0,0,0,0) 85%,
+                    rgba(0,0,0,0.2) 100%
+                ),
+                #c4b5a0;
+            padding: 60px 80px;
+            border-radius: 4px;
+        }
+        .lightbox-image {
+            max-width: 70vw;
+            max-height: 65vh;
+            filter: drop-shadow(10px 15px 30px rgba(0,0,0,0.6));
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 2rem;
+            color: #888;
+            cursor: pointer;
+            transition: color 0.2s;
+            z-index: 1001;
+        }
+        .lightbox-close:hover {
+            color: #fff;
+        }
+        .lightbox-info {
+            text-align: center;
+            margin-top: 30px;
+            color: #fff;
+        }
+        .lightbox-info h2 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            color: #d4af37;
+            margin-bottom: 10px;
+        }
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 3rem;
+            color: #666;
+            cursor: pointer;
+            padding: 20px;
+            transition: color 0.2s;
+            user-select: none;
+        }
+        .lightbox-nav:hover {
+            color: #fff;
+        }
+        .lightbox-nav.prev { left: 20px; }
+        .lightbox-nav.next { right: 20px; }
+
+        /* Footer */
+        .footer {
+            background: #1a1a1a;
+            padding: 40px;
+            text-align: center;
+            border-top: 1px solid #333;
+        }
+        .footer p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.5rem;
+                letter-spacing: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Gallery Collection</h1>
+        <p>Fine Art & Antique Paintings</p>
+    </div>
+
+    <div class="gallery" id="gallery">
+        <!-- Paintings will be inserted here by JavaScript -->
+    </div>
+
+    <div class="footer">
+        <p>For inquiries, please contact us</p>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+        <span class="lightbox-nav prev" onclick="navigateLightbox(-1)">&#10094;</span>
+        <span class="lightbox-nav next" onclick="navigateLightbox(1)">&#10095;</span>
+        <div class="lightbox-content">
+            <div class="lightbox-wall">
+                <img class="lightbox-image" id="lightboxImage" src="" alt="">
+            </div>
+        </div>
+        <div class="lightbox-info">
+            <h2 id="lightboxTitle"></h2>
+            <p id="lightboxDesc"></p>
+        </div>
+    </div>
+
+    <script>
+        // Painting data - will show all cropped paintings
+        const paintings = [
+            { file: "IMG_2653_cropped.png", title: "Landscape with Riders", desc: "Oil on canvas" },
+            { file: "IMG_2656_cropped.png", title: "Castle Architecture", desc: "Etching" },
+            { file: "IMG_2666_cropped.png", title: "Dutch Canal Scene", desc: "Oil on panel" },
+            { file: "IMG_2667_cropped.png", title: "Harbor View", desc: "Drawing" },
+            { file: "IMG_2668_cropped.png", title: "Amsterdam Canal", desc: "Oil on canvas" },
+            { file: "IMG_2672_cropped.png", title: "Seascape", desc: "Oil on canvas" },
+            { file: "IMG_2675_cropped.png", title: "Portrait of a Lady", desc: "Oil on canvas" },
+            { file: "IMG_2676_cropped.png", title: "Figure Study", desc: "Mixed media" },
+            { file: "IMG_2680_cropped.png", title: "Maritime Scene", desc: "Etching" },
+            { file: "IMG_2681_cropped.png", title: "Coastal View", desc: "Oil on canvas" },
+            { file: "IMG_2684_cropped.png", title: "Landscape", desc: "Oil on canvas" },
+            { file: "IMG_2685_cropped.png", title: "Rural Scene", desc: "Oil on canvas" },
+            { file: "IMG_2686_cropped.png", title: "Interior", desc: "Oil on panel" },
+            { file: "IMG_2689_cropped.png", title: "Portrait", desc: "Oil on canvas" },
+            { file: "IMG_2692_cropped.png", title: "Religious Figure", desc: "Drawing" },
+            { file: "IMG_2695_cropped.png", title: "Landscape View", desc: "Oil on canvas" },
+            { file: "IMG_2696_cropped.png", title: "Still Life", desc: "Oil on canvas" },
+            { file: "IMG_2699_cropped.png", title: "Composition", desc: "Oil on canvas" },
+            { file: "IMG_2703_cropped.png", title: "Village Scene", desc: "Oil on panel" },
+            { file: "IMG_2705_cropped.png", title: "Floral Study", desc: "Oil on canvas" },
+            { file: "IMG_2710_cropped.png", title: "Abstract Figure", desc: "Mixed media" },
+            { file: "IMG_2711_cropped.png", title: "Architectural Study", desc: "Drawing" },
+            { file: "IMG_2713_cropped.png", title: "Landscape", desc: "Oil on canvas" },
+            { file: "IMG_2714_cropped.png", title: "Seascape", desc: "Oil on canvas" },
+            { file: "IMG_2715_cropped.png", title: "Portrait Study", desc: "Oil on canvas" },
+            { file: "IMG_2717_cropped.png", title: "Genre Scene", desc: "Oil on panel" },
+            { file: "IMG_2723_cropped.png", title: "Church Interior", desc: "Oil on canvas" },
+            { file: "IMG_2724_cropped.png", title: "Cathedral View", desc: "Drawing" },
+            { file: "IMG_2725_cropped.png", title: "Still Life", desc: "Oil on canvas" },
+            { file: "IMG_2729_cropped.png", title: "Landscape", desc: "Oil on canvas" },
+            { file: "IMG_2730_cropped.png", title: "Sunflowers", desc: "Oil on canvas" },
+            { file: "IMG_2731_cropped.png", title: "Floral Arrangement", desc: "Oil on canvas" },
+            { file: "IMG_2732_cropped.png", title: "Abstract", desc: "Oil on canvas" },
+            { file: "IMG_2733_cropped.png", title: "Landscape", desc: "Oil on canvas" },
+            { file: "IMG_2736_cropped.png", title: "Panoramic View", desc: "Oil on canvas" },
+            { file: "IMG_2739_cropped.png", title: "Antique Map of Zeeland", desc: "Engraving" },
+            { file: "IMG_2741_cropped.png", title: "Figure Composition", desc: "Oil on canvas" },
+            { file: "IMG_2746_cropped.png", title: "Landscape", desc: "Oil on canvas" },
+            { file: "IMG_2748_cropped.png", title: "Still Life", desc: "Oil on panel" }
+        ];
+
+        let currentLightboxIndex = 0;
+
+        // Generate gallery
+        function generateGallery() {
+            const gallery = document.getElementById('gallery');
+
+            paintings.forEach((painting, index) => {
+                const container = document.createElement('div');
+                container.className = 'painting-container';
+                container.onclick = () => openLightbox(index);
+
+                container.innerHTML = `
+                    <div class="museum-wall"></div>
+                    <div class="painting-frame">
+                        <img src="Cropped/${painting.file}" alt="${painting.title}" loading="lazy">
+                    </div>
+                    <div class="painting-info">
+                        <h3>${painting.title}</h3>
+                        <p>${painting.desc}</p>
+                    </div>
+                `;
+
+                gallery.appendChild(container);
+            });
+        }
+
+        // Lightbox functions
+        function openLightbox(index) {
+            currentLightboxIndex = index;
+            updateLightbox();
+            document.getElementById('lightbox').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function updateLightbox() {
+            const painting = paintings[currentLightboxIndex];
+            document.getElementById('lightboxImage').src = `Cropped/${painting.file}`;
+            document.getElementById('lightboxTitle').textContent = painting.title;
+            document.getElementById('lightboxDesc').textContent = painting.desc;
+        }
+
+        function navigateLightbox(delta) {
+            currentLightboxIndex += delta;
+            if (currentLightboxIndex < 0) currentLightboxIndex = paintings.length - 1;
+            if (currentLightboxIndex >= paintings.length) currentLightboxIndex = 0;
+            updateLightbox();
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (!document.getElementById('lightbox').classList.contains('active')) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') navigateLightbox(-1);
+            if (e.key === 'ArrowRight') navigateLightbox(1);
+        });
+
+        // Initialize
+        generateGallery();
+    </script>
+</body>
+</html>

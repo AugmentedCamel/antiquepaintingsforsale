@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painting Crop Review Tool</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+        .header {
+            background: #16213e;
+            padding: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .header h1 {
+            font-size: 1.5rem;
+        }
+        .progress {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .progress-bar {
+            width: 200px;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            transition: width 0.3s;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+        }
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .stat.good { color: #4ade80; }
+        .stat.bad { color: #f87171; }
+        .stat.pending { color: #fbbf24; }
+
+        .main {
+            padding-top: 100px;
+            padding-bottom: 100px;
+        }
+
+        .image-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 30px;
+            flex-wrap: wrap;
+        }
+        .image-box {
+            text-align: center;
+        }
+        .image-box h3 {
+            margin-bottom: 10px;
+            color: #94a3b8;
+        }
+        .image-box img {
+            max-width: 500px;
+            max-height: 500px;
+            border: 3px solid #333;
+            border-radius: 8px;
+            background: #222;
+        }
+
+        .controls {
+            background: #16213e;
+            padding: 20px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+        }
+
+        .nav-btn {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+        .nav-btn:hover {
+            background: #475569;
+        }
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .action-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .action-btn.good {
+            background: #166534;
+            color: white;
+        }
+        .action-btn.good:hover {
+            background: #15803d;
+        }
+        .action-btn.good.selected {
+            background: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.4);
+        }
+
+        .action-btn.crop-issue {
+            background: #9a3412;
+            color: white;
+        }
+        .action-btn.crop-issue:hover {
+            background: #c2410c;
+        }
+        .action-btn.crop-issue.selected {
+            background: #ea580c;
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.4);
+        }
+
+        .action-btn.skew-issue {
+            background: #7c2d12;
+            color: white;
+        }
+        .action-btn.skew-issue:hover {
+            background: #9a3412;
+        }
+        .action-btn.skew-issue.selected {
+            background: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.4);
+        }
+
+        .action-btn.skip {
+            background: #374151;
+            color: white;
+        }
+        .action-btn.skip:hover {
+            background: #4b5563;
+        }
+        .action-btn.skip.selected {
+            background: #6b7280;
+            box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.4);
+        }
+
+        .filename {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            color: #94a3b8;
+        }
+
+        .export-section {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 101;
+        }
+        .export-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .export-btn:hover {
+            background: #2563eb;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+        .modal-content pre {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+        }
+        .modal-content button {
+            margin-top: 20px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .copy-btn {
+            margin-left: 10px;
+            background: #10b981 !important;
+        }
+
+        .keyboard-hint {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .keyboard-hint kbd {
+            background: #374151;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Painting Crop Review Tool</h1>
+        <div class="progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span id="progressText">0 / 0</span>
+        </div>
+        <div class="stats">
+            <div class="stat good"><span id="goodCount">0</span> Good</div>
+            <div class="stat bad"><span id="cropCount">0</span> Crop Issues</div>
+            <div class="stat bad"><span id="skewCount">0</span> Skew Issues</div>
+            <div class="stat pending"><span id="skipCount">0</span> Skipped</div>
+        </div>
+    </div>
+
+    <div class="export-section">
+        <button class="export-btn" onclick="showExport()">Export Results</button>
+    </div>
+
+    <div class="main">
+        <div class="filename" id="filename"></div>
+        <div class="image-container">
+            <div class="image-box">
+                <h3>Original</h3>
+                <img id="originalImg" src="" alt="Original">
+            </div>
+            <div class="image-box">
+                <h3>Cropped</h3>
+                <img id="croppedImg" src="" alt="Cropped">
+            </div>
+        </div>
+    </div>
+
+    <div class="keyboard-hint">
+        <kbd>1</kbd> Good &nbsp; <kbd>2</kbd> Crop Issue &nbsp; <kbd>3</kbd> Skew Issue &nbsp; <kbd>4</kbd> Skip &nbsp; <kbd>←</kbd><kbd>→</kbd> Navigate
+    </div>
+
+    <div class="controls">
+        <button class="nav-btn" id="prevBtn" onclick="navigate(-1)">← Previous</button>
+        <div class="action-buttons">
+            <button class="action-btn good" onclick="markAs('good')">✓ Good</button>
+            <button class="action-btn crop-issue" onclick="markAs('crop')">✂ Crop Issue</button>
+            <button class="action-btn skew-issue" onclick="markAs('skew')">↺ Skew Issue</button>
+            <button class="action-btn skip" onclick="markAs('skip')">Skip (Not a painting)</button>
+        </div>
+        <button class="nav-btn" id="nextBtn" onclick="navigate(1)">Next →</button>
+    </div>
+
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <h2>Review Results</h2>
+            <pre id="exportData"></pre>
+            <button onclick="closeModal()">Close</button>
+            <button class="copy-btn" onclick="copyResults()">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        // Image list - will be populated
+        const images = [
+            "IMG_2653", "IMG_2656", "IMG_2666", "IMG_2667", "IMG_2668",
+            "IMG_2672", "IMG_2675", "IMG_2676", "IMG_2680", "IMG_2681",
+            "IMG_2684", "IMG_2685", "IMG_2686", "IMG_2689", "IMG_2692",
+            "IMG_2693", "IMG_2695", "IMG_2696", "IMG_2699", "IMG_2703",
+            "IMG_2705", "IMG_2706", "IMG_2710", "IMG_2711", "IMG_2712",
+            "IMG_2713", "IMG_2714", "IMG_2715", "IMG_2717", "IMG_2723",
+            "IMG_2724", "IMG_2725", "IMG_2729", "IMG_2730", "IMG_2731",
+            "IMG_2732", "IMG_2733", "IMG_2736", "IMG_2739", "IMG_2740",
+            "IMG_2741", "IMG_2742", "IMG_2743", "IMG_2746", "IMG_2748",
+            "IMG_2753", "IMG_2754"
+        ];
+
+        // State
+        let currentIndex = 0;
+        let reviews = {};
+
+        // Load saved state
+        const saved = localStorage.getItem('paintingReviews');
+        if (saved) {
+            reviews = JSON.parse(saved);
+        }
+
+        function saveState() {
+            localStorage.setItem('paintingReviews', JSON.stringify(reviews));
+        }
+
+        function updateDisplay() {
+            const name = images[currentIndex];
+            document.getElementById('filename').textContent = `${name}.png (${currentIndex + 1} of ${images.length})`;
+            document.getElementById('originalImg').src = `PNG/${name}.png`;
+            document.getElementById('croppedImg').src = `Cropped/${name}_cropped.png`;
+
+            // Update button states
+            document.querySelectorAll('.action-btn').forEach(btn => btn.classList.remove('selected'));
+            const status = reviews[name];
+            if (status === 'good') document.querySelector('.action-btn.good').classList.add('selected');
+            if (status === 'crop') document.querySelector('.action-btn.crop-issue').classList.add('selected');
+            if (status === 'skew') document.querySelector('.action-btn.skew-issue').classList.add('selected');
+            if (status === 'skip') document.querySelector('.action-btn.skip').classList.add('selected');
+
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex === images.length - 1;
+
+            updateStats();
+        }
+
+        function updateStats() {
+            let good = 0, crop = 0, skew = 0, skip = 0;
+            Object.values(reviews).forEach(status => {
+                if (status === 'good') good++;
+                if (status === 'crop') crop++;
+                if (status === 'skew') skew++;
+                if (status === 'skip') skip++;
+            });
+
+            document.getElementById('goodCount').textContent = good;
+            document.getElementById('cropCount').textContent = crop;
+            document.getElementById('skewCount').textContent = skew;
+            document.getElementById('skipCount').textContent = skip;
+
+            const reviewed = good + crop + skew + skip;
+            const percent = (reviewed / images.length) * 100;
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = `${reviewed} / ${images.length}`;
+        }
+
+        function markAs(status) {
+            const name = images[currentIndex];
+            reviews[name] = status;
+            saveState();
+            updateDisplay();
+
+            // Auto-advance to next
+            if (currentIndex < images.length - 1) {
+                setTimeout(() => navigate(1), 300);
+            }
+        }
+
+        function navigate(delta) {
+            currentIndex = Math.max(0, Math.min(images.length - 1, currentIndex + delta));
+            updateDisplay();
+        }
+
+        function showExport() {
+            const results = {
+                good: [],
+                crop_issues: [],
+                skew_issues: [],
+                skipped: [],
+                not_reviewed: []
+            };
+
+            images.forEach(name => {
+                const status = reviews[name];
+                if (status === 'good') results.good.push(name);
+                else if (status === 'crop') results.crop_issues.push(name);
+                else if (status === 'skew') results.skew_issues.push(name);
+                else if (status === 'skip') results.skipped.push(name);
+                else results.not_reviewed.push(name);
+            });
+
+            document.getElementById('exportData').textContent = JSON.stringify(results, null, 2);
+            document.getElementById('exportModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('exportModal').classList.remove('active');
+        }
+
+        function copyResults() {
+            const text = document.getElementById('exportData').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') navigate(-1);
+            if (e.key === 'ArrowRight') navigate(1);
+            if (e.key === '1') markAs('good');
+            if (e.key === '2') markAs('crop');
+            if (e.key === '3') markAs('skew');
+            if (e.key === '4') markAs('skip');
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Initialize
+        updateDisplay();
+    </script>
+</body>
+</html>

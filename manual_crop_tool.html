@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Frame Corner Selection Tool</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: #16213e;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .header h1 {
+            font-size: 1.3rem;
+        }
+        .nav-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .nav-btn {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .nav-btn:hover {
+            background: #475569;
+        }
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .filename {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .image-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .canvas-container {
+            position: relative;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #111;
+        }
+        #mainCanvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .preview-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .preview-box {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .preview-box h3 {
+            margin-bottom: 10px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        #previewCanvas {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 4px;
+            background: #111;
+        }
+
+        .instructions {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #fbbf24;
+        }
+        .instructions ol {
+            padding-left: 20px;
+            line-height: 1.8;
+            color: #94a3b8;
+        }
+        .instructions li.done {
+            color: #4ade80;
+        }
+        .corner-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .corner-indicator.tl { background: #ef4444; }
+        .corner-indicator.tr { background: #22c55e; }
+        .corner-indicator.br { background: #3b82f6; }
+        .corner-indicator.bl { background: #f59e0b; }
+
+        .actions {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .action-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .action-btn.primary {
+            background: #22c55e;
+            color: white;
+        }
+        .action-btn.primary:hover {
+            background: #16a34a;
+        }
+        .action-btn.primary:disabled {
+            background: #374151;
+            cursor: not-allowed;
+        }
+        .action-btn.secondary {
+            background: #475569;
+            color: white;
+        }
+        .action-btn.secondary:hover {
+            background: #64748b;
+        }
+        .action-btn.danger {
+            background: #dc2626;
+            color: white;
+        }
+        .action-btn.danger:hover {
+            background: #b91c1c;
+        }
+
+        .export-section {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        .export-section h3 {
+            margin-bottom: 10px;
+            color: #94a3b8;
+        }
+        .export-section textarea {
+            width: 100%;
+            height: 100px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 4px;
+            color: #eee;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            resize: vertical;
+        }
+        .progress-info {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .progress-info .done { color: #4ade80; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Manual Frame Corner Selection</h1>
+        <div class="nav-controls">
+            <button class="nav-btn" onclick="navigate(-1)" id="prevBtn">← Previous</button>
+            <span class="filename" id="filename">Loading...</span>
+            <button class="nav-btn" onclick="navigate(1)" id="nextBtn">Next →</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="image-panel">
+            <div class="canvas-container">
+                <canvas id="mainCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="preview-panel">
+            <div class="instructions">
+                <h3>Instructions</h3>
+                <ol>
+                    <li id="step1"><span class="corner-indicator tl"></span>Click TOP-LEFT corner of frame</li>
+                    <li id="step2"><span class="corner-indicator tr"></span>Click TOP-RIGHT corner of frame</li>
+                    <li id="step3"><span class="corner-indicator br"></span>Click BOTTOM-RIGHT corner of frame</li>
+                    <li id="step4"><span class="corner-indicator bl"></span>Click BOTTOM-LEFT corner of frame</li>
+                </ol>
+            </div>
+
+            <div class="preview-box">
+                <h3>Preview (Perspective Corrected)</h3>
+                <canvas id="previewCanvas"></canvas>
+            </div>
+
+            <div class="actions">
+                <button class="action-btn primary" id="saveBtn" onclick="saveCorners()" disabled>Save & Next</button>
+                <button class="action-btn secondary" onclick="resetCorners()">Reset Corners</button>
+                <button class="action-btn secondary" onclick="skipImage()">Skip This Image</button>
+            </div>
+
+            <div class="export-section">
+                <h3>Manual Corrections Data</h3>
+                <textarea id="exportData" readonly></textarea>
+                <div class="progress-info">
+                    <span class="done" id="doneCount">0</span> / <span id="totalCount">0</span> images corrected
+                </div>
+                <button class="action-btn secondary" style="margin-top:10px" onclick="copyData()">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Images that need manual correction
+        const imagesToFix = [
+            "IMG_2666", "IMG_2675", "IMG_2676", "IMG_2680", "IMG_2685",
+            "IMG_2689", "IMG_2695", "IMG_2703", "IMG_2706", "IMG_2710",
+            "IMG_2711", "IMG_2712", "IMG_2723", "IMG_2724", "IMG_2725",
+            "IMG_2730", "IMG_2731", "IMG_2732", "IMG_2733", "IMG_2736",
+            "IMG_2739", "IMG_2741", "IMG_2742", "IMG_2743", "IMG_2746",
+            "IMG_2748", "IMG_2753", "IMG_2754"
+        ];
+
+        let currentIndex = 0;
+        let corners = [];
+        let img = new Image();
+        let canvas, ctx, previewCanvas, previewCtx;
+        let scale = 1;
+        let corrections = {};
+
+        // Load saved corrections
+        const saved = localStorage.getItem('manualCorrections');
+        if (saved) {
+            corrections = JSON.parse(saved);
+        }
+
+        function init() {
+            canvas = document.getElementById('mainCanvas');
+            ctx = canvas.getContext('2d');
+            previewCanvas = document.getElementById('previewCanvas');
+            previewCtx = previewCanvas.getContext('2d');
+
+            canvas.addEventListener('click', handleClick);
+
+            document.getElementById('totalCount').textContent = imagesToFix.length;
+
+            loadImage();
+            updateExportData();
+        }
+
+        function loadImage() {
+            const name = imagesToFix[currentIndex];
+            document.getElementById('filename').textContent = `${name}.png (${currentIndex + 1} of ${imagesToFix.length})`;
+
+            // Reset corners
+            corners = [];
+            updateStepIndicators();
+            document.getElementById('saveBtn').disabled = true;
+
+            // Load saved corners if they exist
+            if (corrections[name]) {
+                corners = corrections[name].slice();
+            }
+
+            img = new Image();
+            img.onload = () => {
+                // Scale image to fit screen
+                const maxWidth = window.innerWidth * 0.55;
+                const maxHeight = window.innerHeight - 150;
+
+                scale = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+
+                drawImage();
+
+                if (corners.length === 4) {
+                    updateStepIndicators();
+                    document.getElementById('saveBtn').disabled = false;
+                    updatePreview();
+                }
+            };
+            img.src = `PNG/${name}.png`;
+
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex === imagesToFix.length - 1;
+        }
+
+        function drawImage() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Draw corners
+            const colors = ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'];
+            corners.forEach((corner, i) => {
+                ctx.beginPath();
+                ctx.arc(corner.x * scale, corner.y * scale, 8, 0, Math.PI * 2);
+                ctx.fillStyle = colors[i];
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // Draw lines between corners
+            if (corners.length >= 2) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+
+                for (let i = 0; i < corners.length; i++) {
+                    const c = corners[i];
+                    if (i === 0) {
+                        ctx.moveTo(c.x * scale, c.y * scale);
+                    } else {
+                        ctx.lineTo(c.x * scale, c.y * scale);
+                    }
+                }
+                if (corners.length === 4) {
+                    ctx.lineTo(corners[0].x * scale, corners[0].y * scale);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        function handleClick(e) {
+            if (corners.length >= 4) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / scale;
+            const y = (e.clientY - rect.top) / scale;
+
+            corners.push({ x: Math.round(x), y: Math.round(y) });
+
+            drawImage();
+            updateStepIndicators();
+
+            if (corners.length === 4) {
+                document.getElementById('saveBtn').disabled = false;
+                updatePreview();
+            }
+        }
+
+        function updateStepIndicators() {
+            for (let i = 1; i <= 4; i++) {
+                const el = document.getElementById(`step${i}`);
+                if (i <= corners.length) {
+                    el.classList.add('done');
+                } else {
+                    el.classList.remove('done');
+                }
+            }
+        }
+
+        function updatePreview() {
+            if (corners.length !== 4) return;
+
+            // Order corners: TL, TR, BR, BL
+            const ordered = orderPoints(corners);
+
+            // Calculate output dimensions
+            const width = Math.max(
+                distance(ordered[0], ordered[1]),
+                distance(ordered[3], ordered[2])
+            );
+            const height = Math.max(
+                distance(ordered[0], ordered[3]),
+                distance(ordered[1], ordered[2])
+            );
+
+            previewCanvas.width = width;
+            previewCanvas.height = height;
+
+            // Create temporary canvas for full-res image
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, 0, 0);
+
+            // Manual perspective transform using bilinear interpolation
+            const srcPoints = ordered.map(p => [p.x, p.y]);
+            const dstPoints = [[0, 0], [width, 0], [width, height], [0, height]];
+
+            const imageData = previewCtx.createImageData(width, height);
+            const srcData = tempCtx.getImageData(0, 0, img.width, img.height);
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    // Bilinear interpolation to find source coordinates
+                    const u = x / width;
+                    const v = y / height;
+
+                    const srcX = (1-u)*(1-v)*srcPoints[0][0] + u*(1-v)*srcPoints[1][0] +
+                                 u*v*srcPoints[2][0] + (1-u)*v*srcPoints[3][0];
+                    const srcY = (1-u)*(1-v)*srcPoints[0][1] + u*(1-v)*srcPoints[1][1] +
+                                 u*v*srcPoints[2][1] + (1-u)*v*srcPoints[3][1];
+
+                    const sx = Math.floor(srcX);
+                    const sy = Math.floor(srcY);
+
+                    if (sx >= 0 && sx < img.width && sy >= 0 && sy < img.height) {
+                        const srcIdx = (sy * img.width + sx) * 4;
+                        const dstIdx = (y * width + x) * 4;
+
+                        imageData.data[dstIdx] = srcData.data[srcIdx];
+                        imageData.data[dstIdx + 1] = srcData.data[srcIdx + 1];
+                        imageData.data[dstIdx + 2] = srcData.data[srcIdx + 2];
+                        imageData.data[dstIdx + 3] = 255;
+                    }
+                }
+            }
+
+            previewCtx.putImageData(imageData, 0, 0);
+        }
+
+        function orderPoints(pts) {
+            // Order: top-left, top-right, bottom-right, bottom-left
+            const sorted = [...pts].sort((a, b) => a.y - b.y);
+            const top = sorted.slice(0, 2).sort((a, b) => a.x - b.x);
+            const bottom = sorted.slice(2, 4).sort((a, b) => a.x - b.x);
+            return [top[0], top[1], bottom[1], bottom[0]];
+        }
+
+        function distance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+
+        function saveCorners() {
+            if (corners.length !== 4) return;
+
+            const name = imagesToFix[currentIndex];
+            const ordered = orderPoints(corners);
+            corrections[name] = ordered;
+
+            localStorage.setItem('manualCorrections', JSON.stringify(corrections));
+            updateExportData();
+
+            // Move to next
+            if (currentIndex < imagesToFix.length - 1) {
+                navigate(1);
+            }
+        }
+
+        function skipImage() {
+            const name = imagesToFix[currentIndex];
+            delete corrections[name];
+            localStorage.setItem('manualCorrections', JSON.stringify(corrections));
+            updateExportData();
+
+            if (currentIndex < imagesToFix.length - 1) {
+                navigate(1);
+            }
+        }
+
+        function resetCorners() {
+            corners = [];
+            drawImage();
+            updateStepIndicators();
+            document.getElementById('saveBtn').disabled = true;
+            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        }
+
+        function navigate(delta) {
+            currentIndex = Math.max(0, Math.min(imagesToFix.length - 1, currentIndex + delta));
+            loadImage();
+        }
+
+        function updateExportData() {
+            const data = {};
+            Object.keys(corrections).forEach(name => {
+                data[name] = corrections[name].map(p => [p.x, p.y]);
+            });
+            document.getElementById('exportData').value = JSON.stringify(data, null, 2);
+            document.getElementById('doneCount').textContent = Object.keys(corrections).length;
+        }
+
+        function copyData() {
+            const textarea = document.getElementById('exportData');
+            textarea.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') navigate(-1);
+            if (e.key === 'ArrowRight') navigate(1);
+            if (e.key === 'Enter' && corners.length === 4) saveCorners();
+            if (e.key === 'Escape') resetCorners();
+        });
+
+        init();
+    </script>
+</body>
+</html>

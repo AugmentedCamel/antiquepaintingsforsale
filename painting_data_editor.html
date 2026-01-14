@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painting Data Editor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+        }
+        .progress {
+            color: #4ade80;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .nav-btn {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .nav-btn:hover {
+            background: #475569;
+        }
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .main {
+            display: flex;
+            gap: 30px;
+        }
+
+        .image-section {
+            flex: 1;
+            text-align: center;
+        }
+        .image-section img {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .filename {
+            margin-top: 10px;
+            color: #94a3b8;
+        }
+
+        .form-section {
+            flex: 1;
+            background: #16213e;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #eee;
+            font-size: 1rem;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .size-inputs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .size-inputs input {
+            width: 80px;
+        }
+        .size-inputs span {
+            color: #666;
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 14px;
+            background: #22c55e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .save-btn:hover {
+            background: #16a34a;
+        }
+
+        .export-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+        .export-section h3 {
+            margin-bottom: 10px;
+            color: #94a3b8;
+        }
+        .export-section textarea {
+            width: 100%;
+            height: 150px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #eee;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .export-btn {
+            flex: 1;
+            padding: 10px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .export-btn:hover {
+            background: #2563eb;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-indicator.complete { background: #22c55e; }
+        .status-indicator.incomplete { background: #f59e0b; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Painting Data Editor</h1>
+        <div class="progress" id="progress">0 / 39 completed</div>
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="navigate(-1)" id="prevBtn">← Previous</button>
+            <button class="nav-btn" onclick="navigate(1)" id="nextBtn">Next →</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="image-section">
+            <img id="paintingImage" src="" alt="Painting">
+            <p class="filename" id="filename"></p>
+        </div>
+
+        <div class="form-section">
+            <div class="form-group">
+                <label>Title *</label>
+                <input type="text" id="title" placeholder="e.g., Landscape with Windmill">
+            </div>
+
+            <div class="form-group">
+                <label>Artist</label>
+                <input type="text" id="artist" placeholder="e.g., Jan van Goyen (or Unknown)">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Year / Period</label>
+                    <input type="text" id="year" placeholder="e.g., 1650 or 19th century">
+                </div>
+                <div class="form-group">
+                    <label>Origin / School</label>
+                    <input type="text" id="origin" placeholder="e.g., Dutch, Flemish">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Size (cm)</label>
+                <div class="size-inputs">
+                    <input type="number" id="width" placeholder="Width">
+                    <span>×</span>
+                    <input type="number" id="height" placeholder="Height">
+                    <span>cm</span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Medium</label>
+                    <select id="medium">
+                        <option value="">-- Select --</option>
+                        <option value="Oil on canvas">Oil on canvas</option>
+                        <option value="Oil on panel">Oil on panel</option>
+                        <option value="Oil on board">Oil on board</option>
+                        <option value="Watercolor">Watercolor</option>
+                        <option value="Gouache">Gouache</option>
+                        <option value="Acrylic">Acrylic</option>
+                        <option value="Drawing">Drawing</option>
+                        <option value="Pencil drawing">Pencil drawing</option>
+                        <option value="Charcoal drawing">Charcoal drawing</option>
+                        <option value="Ink drawing">Ink drawing</option>
+                        <option value="Etching">Etching</option>
+                        <option value="Engraving">Engraving</option>
+                        <option value="Lithograph">Lithograph</option>
+                        <option value="Print">Print</option>
+                        <option value="Mixed media">Mixed media</option>
+                        <option value="Pastel">Pastel</option>
+                        <option value="other">Other...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Condition</label>
+                    <select id="condition">
+                        <option value="">-- Select --</option>
+                        <option value="Excellent">Excellent</option>
+                        <option value="Very Good">Very Good</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Needs restoration">Needs restoration</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Price (€)</label>
+                <input type="text" id="price" placeholder="e.g., 1500 or On request">
+            </div>
+
+            <div class="form-group">
+                <label>Description / Notes</label>
+                <textarea id="description" placeholder="Additional details, provenance, signature info, etc."></textarea>
+            </div>
+
+            <button class="save-btn" onclick="saveData()">Save & Continue →</button>
+
+            <div class="export-section">
+                <h3>Export Data (copy when done)</h3>
+                <textarea id="exportData" readonly></textarea>
+                <div class="export-buttons">
+                    <button class="export-btn" onclick="copyData()">Copy to Clipboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const paintings = [
+            "IMG_2653", "IMG_2656", "IMG_2666", "IMG_2667", "IMG_2668",
+            "IMG_2672", "IMG_2675", "IMG_2676", "IMG_2680", "IMG_2681",
+            "IMG_2684", "IMG_2685", "IMG_2686", "IMG_2689", "IMG_2692",
+            "IMG_2695", "IMG_2696", "IMG_2699", "IMG_2703", "IMG_2705",
+            "IMG_2710", "IMG_2711", "IMG_2713", "IMG_2714", "IMG_2715",
+            "IMG_2717", "IMG_2723", "IMG_2724", "IMG_2725", "IMG_2729",
+            "IMG_2730", "IMG_2731", "IMG_2732", "IMG_2733", "IMG_2736",
+            "IMG_2739", "IMG_2741", "IMG_2746", "IMG_2748"
+        ];
+
+        let currentIndex = 0;
+        let paintingData = {};
+
+        // Load saved data
+        const saved = localStorage.getItem('paintingData');
+        if (saved) {
+            paintingData = JSON.parse(saved);
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('paintingData', JSON.stringify(paintingData));
+            updateExport();
+            updateProgress();
+        }
+
+        function loadPainting() {
+            const id = paintings[currentIndex];
+            document.getElementById('paintingImage').src = `Cropped/${id}_cropped.png`;
+            document.getElementById('filename').textContent = `${id}.png (${currentIndex + 1} / ${paintings.length})`;
+
+            // Load existing data
+            const data = paintingData[id] || {};
+            document.getElementById('title').value = data.title || '';
+            document.getElementById('artist').value = data.artist || '';
+            document.getElementById('year').value = data.year || '';
+            document.getElementById('origin').value = data.origin || '';
+            document.getElementById('width').value = data.width || '';
+            document.getElementById('height').value = data.height || '';
+            document.getElementById('medium').value = data.medium || '';
+            document.getElementById('condition').value = data.condition || '';
+            document.getElementById('price').value = data.price || '';
+            document.getElementById('description').value = data.description || '';
+
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex === paintings.length - 1;
+        }
+
+        function saveData() {
+            const id = paintings[currentIndex];
+            paintingData[id] = {
+                title: document.getElementById('title').value,
+                artist: document.getElementById('artist').value,
+                year: document.getElementById('year').value,
+                origin: document.getElementById('origin').value,
+                width: document.getElementById('width').value,
+                height: document.getElementById('height').value,
+                medium: document.getElementById('medium').value,
+                condition: document.getElementById('condition').value,
+                price: document.getElementById('price').value,
+                description: document.getElementById('description').value
+            };
+            saveToStorage();
+
+            // Move to next
+            if (currentIndex < paintings.length - 1) {
+                navigate(1);
+            }
+        }
+
+        function navigate(delta) {
+            // Auto-save current before navigating
+            const id = paintings[currentIndex];
+            const title = document.getElementById('title').value;
+            if (title) {
+                paintingData[id] = {
+                    title: document.getElementById('title').value,
+                    artist: document.getElementById('artist').value,
+                    year: document.getElementById('year').value,
+                    origin: document.getElementById('origin').value,
+                    width: document.getElementById('width').value,
+                    height: document.getElementById('height').value,
+                    medium: document.getElementById('medium').value,
+                    condition: document.getElementById('condition').value,
+                    price: document.getElementById('price').value,
+                    description: document.getElementById('description').value
+                };
+                saveToStorage();
+            }
+
+            currentIndex = Math.max(0, Math.min(paintings.length - 1, currentIndex + delta));
+            loadPainting();
+        }
+
+        function updateProgress() {
+            const completed = Object.keys(paintingData).filter(id => paintingData[id].title).length;
+            document.getElementById('progress').textContent = `${completed} / ${paintings.length} completed`;
+        }
+
+        function updateExport() {
+            const exportData = {};
+            paintings.forEach(id => {
+                if (paintingData[id]) {
+                    exportData[id] = paintingData[id];
+                }
+            });
+            document.getElementById('exportData').value = JSON.stringify(exportData, null, 2);
+        }
+
+        function copyData() {
+            const textarea = document.getElementById('exportData');
+            textarea.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard! Paste this to Claude to update the gallery.');
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === 'ArrowLeft') navigate(-1);
+            if (e.key === 'ArrowRight') navigate(1);
+        });
+
+        // Initialize
+        loadPainting();
+        updateProgress();
+        updateExport();
+    </script>
+</body>
+</html>

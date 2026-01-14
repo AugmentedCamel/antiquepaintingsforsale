@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galerie</title>
+    <!-- Swiss Typography - DM Sans (similar to Helvetica/Akzidenz-Grotesk) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300;1,9..40,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Swiss Design Color Palette */
+            --color-bg: #fafafa;
+            --color-wall: #f5f5f5;
+            --color-text-primary: #1a1a1a;
+            --color-text-secondary: #666666;
+            --color-text-tertiary: #999999;
+            --color-accent: #1a1a1a;
+            --color-border: #e5e5e5;
+
+            /* Typography Scale (Swiss proportions) */
+            --font-primary: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            --font-size-xs: 0.6875rem;   /* 11px */
+            --font-size-sm: 0.75rem;     /* 12px */
+            --font-size-base: 0.875rem;  /* 14px */
+            --font-size-md: 1rem;        /* 16px */
+            --font-size-lg: 1.125rem;    /* 18px */
+            --font-size-xl: 1.5rem;      /* 24px */
+            --font-size-2xl: 2rem;       /* 32px */
+
+            /* Spacing (8px grid) */
+            --space-1: 8px;
+            --space-2: 16px;
+            --space-3: 24px;
+            --space-4: 32px;
+            --space-5: 40px;
+            --space-6: 48px;
+            --space-8: 64px;
+            --space-10: 80px;
+            --space-12: 96px;
+            --space-16: 128px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: var(--color-bg);
+            font-family: var(--font-primary);
+            font-weight: 400;
+            font-size: var(--font-size-base);
+            line-height: 1.5;
+            color: var(--color-text-primary);
+            cursor: default;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Navigation Arrows - Swiss minimalist */
+        .nav-arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: var(--space-8);
+            height: var(--space-12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            opacity: 0.25;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-arrow:hover {
+            opacity: 0.8;
+        }
+
+        .nav-arrow.disabled {
+            opacity: 0.08;
+            pointer-events: none;
+        }
+
+        .nav-arrow.left {
+            left: var(--space-5);
+        }
+
+        .nav-arrow.right {
+            right: var(--space-5);
+        }
+
+        .nav-arrow svg {
+            width: 28px;
+            height: 28px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .nav-arrow:hover svg {
+            transform: translateX(2px);
+        }
+
+        .nav-arrow.left:hover svg {
+            transform: translateX(-2px);
+        }
+
+        .nav-arrow svg path {
+            fill: var(--color-text-primary);
+        }
+
+        /* Editorial Layout - Asymmetric Swiss Grid */
+        .editorial-title {
+            position: fixed;
+            bottom: var(--space-6);
+            left: var(--space-6);
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .editorial-title h1 {
+            font-size: var(--font-size-xl);
+            font-weight: 400;
+            color: var(--color-text-primary);
+            letter-spacing: -0.01em;
+            margin-bottom: var(--space-1);
+            line-height: 1.2;
+        }
+
+        .editorial-title .artist {
+            font-size: var(--font-size-sm);
+            font-weight: 300;
+            color: var(--color-text-secondary);
+            letter-spacing: 0.02em;
+        }
+
+        /* Counter - Top Right (Swiss asymmetry) */
+        .counter-display {
+            position: fixed;
+            top: var(--space-5);
+            right: var(--space-6);
+            z-index: 100;
+            pointer-events: none;
+            text-align: right;
+        }
+
+        .counter-display .current {
+            font-size: var(--font-size-2xl);
+            font-weight: 300;
+            color: var(--color-text-primary);
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        .counter-display .divider {
+            font-size: var(--font-size-sm);
+            font-weight: 300;
+            color: var(--color-text-tertiary);
+            margin: var(--space-1) 0;
+        }
+
+        .counter-display .total {
+            font-size: var(--font-size-sm);
+            font-weight: 400;
+            color: var(--color-text-tertiary);
+            letter-spacing: 0.05em;
+        }
+
+        /* Details Panel - Swiss Editorial (bottom right asymmetric) */
+        .details-panel {
+            position: fixed;
+            bottom: var(--space-6);
+            right: var(--space-6);
+            max-width: 320px;
+            z-index: 100;
+            opacity: 0;
+            transform: translateY(var(--space-2));
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        .details-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .details-panel .meta-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: var(--space-1) var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+
+        .details-panel .meta-label {
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            color: var(--color-text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .details-panel .meta-value {
+            font-size: var(--font-size-sm);
+            font-weight: 400;
+            color: var(--color-text-primary);
+        }
+
+        .details-panel .description {
+            font-size: var(--font-size-sm);
+            font-weight: 300;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--space-3);
+            padding-top: var(--space-3);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .details-panel .price-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            padding-top: var(--space-3);
+            border-top: 1px solid var(--color-border);
+        }
+
+        .details-panel .price {
+            font-size: var(--font-size-lg);
+            font-weight: 400;
+            color: var(--color-text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .offer-btn {
+            background: transparent;
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-text-primary);
+            padding: var(--space-1) var(--space-3);
+            font-family: var(--font-primary);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .offer-btn:hover {
+            background: var(--color-text-primary);
+            color: var(--color-bg);
+        }
+
+        .highest-offer {
+            font-size: var(--font-size-xs);
+            color: var(--color-text-tertiary);
+            margin-top: var(--space-2);
+            text-align: right;
+        }
+
+        .highest-offer span {
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        /* Offer Modal - Swiss Editorial */
+        .offer-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(250, 250, 250, 0.97);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .offer-modal.active {
+            display: flex;
+        }
+
+        .offer-modal-content {
+            background: var(--color-bg);
+            padding: var(--space-6);
+            max-width: 380px;
+            width: 90%;
+            position: relative;
+        }
+
+        .offer-modal-close {
+            position: absolute;
+            top: var(--space-3);
+            right: var(--space-3);
+            font-size: var(--font-size-lg);
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            line-height: 1;
+        }
+
+        .offer-modal-close:hover {
+            color: var(--color-text-primary);
+        }
+
+        .offer-modal h2 {
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            color: var(--color-text-tertiary);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-4);
+        }
+
+        .offer-modal .painting-preview {
+            margin-bottom: var(--space-4);
+            padding-bottom: var(--space-3);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .offer-modal .painting-preview h3 {
+            font-size: var(--font-size-md);
+            font-weight: 400;
+            color: var(--color-text-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .offer-modal .painting-preview p {
+            font-size: var(--font-size-sm);
+            font-weight: 300;
+            color: var(--color-text-secondary);
+        }
+
+        .offer-form-group {
+            margin-bottom: var(--space-3);
+        }
+
+        .offer-form-group label {
+            display: block;
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            color: var(--color-text-tertiary);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-1);
+        }
+
+        .offer-form-group input {
+            width: 100%;
+            padding: var(--space-2);
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            font-family: var(--font-primary);
+            font-size: var(--font-size-base);
+            transition: border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .offer-form-group input:focus {
+            outline: none;
+            border-color: var(--color-text-primary);
+        }
+
+        .offer-form-group input::placeholder {
+            color: var(--color-text-tertiary);
+        }
+
+        .offer-submit-btn {
+            width: 100%;
+            padding: var(--space-2);
+            background: var(--color-text-primary);
+            color: var(--color-bg);
+            border: 1px solid var(--color-text-primary);
+            font-family: var(--font-primary);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: var(--space-2);
+        }
+
+        .offer-submit-btn:hover {
+            background: transparent;
+            color: var(--color-text-primary);
+        }
+
+        .offer-success {
+            text-align: center;
+            padding: var(--space-4) 0;
+        }
+
+        .offer-success .checkmark {
+            font-size: var(--font-size-2xl);
+            color: var(--color-text-primary);
+            margin-bottom: var(--space-2);
+        }
+
+        .offer-success h3 {
+            font-size: var(--font-size-md);
+            font-weight: 400;
+            color: var(--color-text-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .offer-success p {
+            font-size: var(--font-size-sm);
+            font-weight: 300;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+
+        .offer-note {
+            font-size: var(--font-size-xs);
+            color: var(--color-text-tertiary);
+            text-align: center;
+            margin-top: var(--space-3);
+            line-height: 1.5;
+        }
+
+        /* Hover zone for details panel */
+        .hover-zone {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 400px;
+            height: 300px;
+            z-index: 85;
+        }
+
+        /* Zoom overlay - Swiss Editorial */
+        .zoom-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(250, 250, 250, 0);
+            z-index: 200;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .zoom-overlay.active {
+            background: rgba(250, 250, 250, 0.98);
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        .zoom-overlay img {
+            max-width: 85vw;
+            max-height: 75vh;
+            object-fit: contain;
+            transform: scale(0.97);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .zoom-overlay.active img {
+            transform: scale(1);
+        }
+
+        .zoom-close {
+            position: absolute;
+            top: var(--space-5);
+            right: var(--space-6);
+            font-size: var(--font-size-xl);
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            line-height: 1;
+        }
+
+        .zoom-close:hover {
+            color: var(--color-text-primary);
+        }
+
+        .zoom-info {
+            position: absolute;
+            bottom: var(--space-6);
+            left: var(--space-6);
+        }
+
+        .zoom-info h2 {
+            font-size: var(--font-size-lg);
+            font-weight: 400;
+            color: var(--color-text-primary);
+            margin-bottom: var(--space-1);
+            letter-spacing: -0.01em;
+        }
+
+        .zoom-info p {
+            font-size: var(--font-size-sm);
+            font-weight: 300;
+            color: var(--color-text-secondary);
+        }
+
+        /* Click hint - subtle, bottom center */
+        .click-hint {
+            position: fixed;
+            bottom: var(--space-3);
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: var(--font-size-xs);
+            font-weight: 400;
+            color: var(--color-text-tertiary);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+        }
+
+        .click-hint.visible {
+            opacity: 0.5;
+        }
+
+        /* Loading - Swiss minimal */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            color: var(--color-text-tertiary);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            z-index: 300;
+        }
+
+        .loading.hidden {
+            display: none;
+        }
+
+        /* Animation indicator */
+        .animating .nav-arrow {
+            pointer-events: none;
+            opacity: 0.08;
+        }
+
+        /* Gallery name - top left (Swiss editorial) */
+        .gallery-name {
+            position: fixed;
+            top: var(--space-5);
+            left: var(--space-6);
+            z-index: 100;
+        }
+
+        .gallery-name span {
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            color: var(--color-text-primary);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div class="loading" id="loading">Loading</div>
+
+    <!-- Gallery Name - Top Left -->
+    <div class="gallery-name">
+        <span>Galerie</span>
+    </div>
+
+    <!-- Counter - Top Right -->
+    <div class="counter-display">
+        <div class="current" id="currentNum">01</div>
+        <div class="divider">—</div>
+        <div class="total" id="totalNum">39</div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-arrow left" onclick="navigate(-1)">
+        <svg viewBox="0 0 24 24">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+        </svg>
+    </div>
+    <div class="nav-arrow right" onclick="navigate(1)">
+        <svg viewBox="0 0 24 24">
+            <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+        </svg>
+    </div>
+
+    <!-- Editorial Title - Bottom Left -->
+    <div class="editorial-title">
+        <h1 id="paintingTitle">Loading...</h1>
+        <p class="artist" id="artistPreview"></p>
+    </div>
+
+    <!-- Hover zone for details panel -->
+    <div class="hover-zone" id="hoverZone"></div>
+
+    <!-- Details Panel - Bottom Right -->
+    <div class="details-panel" id="detailsPanel">
+        <div class="meta-grid">
+            <span class="meta-label">Year</span>
+            <span class="meta-value" id="infoYear">c. 1850</span>
+            <span class="meta-label">Medium</span>
+            <span class="meta-value" id="infoMedium">Oil on canvas</span>
+            <span class="meta-label">Size</span>
+            <span class="meta-value" id="infoSize">45 × 60 cm</span>
+            <span class="meta-label">Condition</span>
+            <span class="meta-value" id="infoCondition">Good</span>
+        </div>
+        <p class="description" id="infoDescription">A beautiful piece from our collection.</p>
+        <div class="price-row">
+            <span class="price" id="infoPrice">€ 1,200</span>
+            <button class="offer-btn" onclick="openOfferModal()">Inquire</button>
+        </div>
+        <p class="highest-offer" id="highestOffer"></p>
+    </div>
+
+    <!-- Offer Modal -->
+    <div class="offer-modal" id="offerModal">
+        <div class="offer-modal-content">
+            <span class="offer-modal-close" onclick="closeOfferModal()">&times;</span>
+            <div id="offerFormContainer">
+                <h2>Make an Offer</h2>
+                <div class="painting-preview">
+                    <h3 id="offerPaintingTitle">Painting Title</h3>
+                    <p id="offerPaintingDetails">Artist - Medium</p>
+                </div>
+                <form id="offerForm" onsubmit="submitOffer(event)">
+                    <div class="offer-form-group">
+                        <label>Your Email</label>
+                        <input type="email" id="offerEmail" placeholder="your@email.com" required>
+                    </div>
+                    <div class="offer-form-group">
+                        <label>Your Offer (EUR)</label>
+                        <input type="number" id="offerAmount" placeholder="Enter amount" min="1" required>
+                    </div>
+                    <div class="offer-form-group">
+                        <label>Your Name (optional)</label>
+                        <input type="text" id="offerName" placeholder="Your name">
+                    </div>
+                    <button type="submit" class="offer-submit-btn">Submit Offer</button>
+                </form>
+                <p class="offer-note">Your offer is not binding. We will contact you to discuss details if your offer is considered.</p>
+            </div>
+            <div id="offerSuccessContainer" style="display: none;">
+                <div class="offer-success">
+                    <div class="checkmark">&#10003;</div>
+                    <h3>Offer Submitted!</h3>
+                    <p>Thank you for your interest. We have received your offer and will contact you at <span id="confirmEmail"></span> if we wish to proceed.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Click hint -->
+    <div class="click-hint" id="clickHint">CLICK TO ZOOM</div>
+
+    <!-- Zoom overlay -->
+    <div class="zoom-overlay" id="zoomOverlay">
+        <span class="zoom-close" onclick="closeZoom()">&times;</span>
+        <img id="zoomImage" src="" alt="">
+        <div class="zoom-info">
+            <h2 id="zoomTitle">Title</h2>
+            <p id="zoomDetails">Details</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script>
+        // Paintings data
+        const paintings = [
+            { file: "IMG_2653_cropped.png", title: "Landscape with Riders", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "60 × 45 cm", condition: "Good", price: "€ 1,200", description: "A serene countryside scene with travelers on horseback." },
+            { file: "IMG_2656_cropped.png", title: "Castle Architecture", artist: "Unknown", year: "19th Century", medium: "Etching", size: "40 × 35 cm", condition: "Very Good", price: "€ 450", description: "Detailed architectural study of a medieval castle." },
+            { file: "IMG_2666_cropped.png", title: "Dutch Canal Scene", artist: "L. Marissa", year: "19th Century", medium: "Oil on panel", size: "35 × 45 cm", condition: "Good", price: "€ 1,800", description: "Charming Dutch village scene with traditional canal houses." },
+            { file: "IMG_2667_cropped.png", title: "Harbor View", artist: "Unknown", year: "19th Century", medium: "Drawing", size: "30 × 40 cm", condition: "Fair", price: "€ 350", description: "Atmospheric harbor scene with sailing vessels." },
+            { file: "IMG_2668_cropped.png", title: "Amsterdam Canal", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "50 × 40 cm", condition: "Good", price: "€ 1,500", description: "Classic Amsterdam canal view with merchant houses." },
+            { file: "IMG_2672_cropped.png", title: "Seascape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "45 × 60 cm", condition: "Good", price: "€ 950", description: "Dramatic seascape with rolling waves." },
+            { file: "IMG_2675_cropped.png", title: "Portrait of a Lady", artist: "Unknown", year: "20th Century", medium: "Oil on canvas", size: "70 × 50 cm", condition: "Very Good", price: "€ 2,200", description: "Elegant Art Deco style portrait with striking composition." },
+            { file: "IMG_2676_cropped.png", title: "Figure Study", artist: "Unknown", year: "20th Century", medium: "Mixed media", size: "80 × 60 cm", condition: "Good", price: "€ 1,800", description: "Expressive modernist figure study." },
+            { file: "IMG_2680_cropped.png", title: "Maritime Scene", artist: "Unknown", year: "19th Century", medium: "Etching", size: "35 × 50 cm", condition: "Good", price: "€ 550", description: "Finely detailed maritime etching with sailing ships." },
+            { file: "IMG_2681_cropped.png", title: "Coastal View", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "40 × 55 cm", condition: "Good", price: "€ 1,100", description: "Peaceful coastal landscape." },
+            { file: "IMG_2684_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "45 × 60 cm", condition: "Good", price: "€ 900", description: "Traditional landscape painting." },
+            { file: "IMG_2685_cropped.png", title: "Rural Scene", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "55 × 75 cm", condition: "Good", price: "€ 1,400", description: "Idyllic countryside scene." },
+            { file: "IMG_2686_cropped.png", title: "Interior", artist: "Unknown", year: "19th Century", medium: "Oil on panel", size: "25 × 30 cm", condition: "Very Good", price: "€ 800", description: "Intimate interior scene." },
+            { file: "IMG_2689_cropped.png", title: "Portrait", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "70 × 55 cm", condition: "Good", price: "€ 1,600", description: "Classical portrait study." },
+            { file: "IMG_2692_cropped.png", title: "Religious Figure", artist: "Unknown", year: "19th Century", medium: "Drawing", size: "35 × 28 cm", condition: "Good", price: "€ 650", description: "Devotional religious artwork." },
+            { file: "IMG_2695_cropped.png", title: "Landscape View", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "50 × 70 cm", condition: "Good", price: "€ 1,300", description: "Expansive landscape vista." },
+            { file: "IMG_2696_cropped.png", title: "Still Life", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "45 × 55 cm", condition: "Good", price: "€ 1,100", description: "Traditional still life composition." },
+            { file: "IMG_2699_cropped.png", title: "Composition", artist: "Unknown", year: "20th Century", medium: "Oil on canvas", size: "60 × 50 cm", condition: "Good", price: "€ 1,500", description: "Modern abstract composition." },
+            { file: "IMG_2703_cropped.png", title: "Village Scene", artist: "Unknown", year: "19th Century", medium: "Oil on panel", size: "30 × 40 cm", condition: "Good", price: "€ 750", description: "Charming village street scene." },
+            { file: "IMG_2705_cropped.png", title: "Floral Study", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "50 × 40 cm", condition: "Good", price: "€ 900", description: "Delicate floral arrangement." },
+            { file: "IMG_2710_cropped.png", title: "Abstract Figure", artist: "Unknown", year: "20th Century", medium: "Mixed media", size: "65 × 50 cm", condition: "Good", price: "€ 1,400", description: "Expressionist figure composition." },
+            { file: "IMG_2711_cropped.png", title: "Architectural Study", artist: "Unknown", year: "19th Century", medium: "Drawing", size: "40 × 30 cm", condition: "Good", price: "€ 500", description: "Detailed architectural drawing." },
+            { file: "IMG_2713_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "45 × 60 cm", condition: "Good", price: "€ 1,000", description: "Atmospheric landscape." },
+            { file: "IMG_2714_cropped.png", title: "Seascape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "40 × 55 cm", condition: "Good", price: "€ 1,100", description: "Marine painting with ships." },
+            { file: "IMG_2715_cropped.png", title: "Portrait Study", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "55 × 45 cm", condition: "Good", price: "€ 1,200", description: "Character portrait study." },
+            { file: "IMG_2717_cropped.png", title: "Genre Scene", artist: "Unknown", year: "19th Century", medium: "Oil on panel", size: "35 × 45 cm", condition: "Good", price: "€ 950", description: "Daily life genre painting." },
+            { file: "IMG_2723_cropped.png", title: "Church Interior", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "60 × 45 cm", condition: "Good", price: "€ 1,600", description: "Atmospheric church interior." },
+            { file: "IMG_2724_cropped.png", title: "Cathedral View", artist: "Unknown", year: "19th Century", medium: "Drawing", size: "50 × 35 cm", condition: "Good", price: "€ 700", description: "Architectural cathedral study." },
+            { file: "IMG_2725_cropped.png", title: "Still Life", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "40 × 50 cm", condition: "Good", price: "€ 850", description: "Classical still life." },
+            { file: "IMG_2729_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "45 × 60 cm", condition: "Good", price: "€ 1,000", description: "Peaceful countryside landscape." },
+            { file: "IMG_2730_cropped.png", title: "Sunflowers", artist: "R. de Roeck", year: "20th Century", medium: "Oil on canvas", size: "55 × 45 cm", condition: "Very Good", price: "€ 1,800", description: "Vibrant sunflower composition with expressive brushwork." },
+            { file: "IMG_2731_cropped.png", title: "Floral Arrangement", artist: "Unknown", year: "20th Century", medium: "Oil on canvas", size: "50 × 40 cm", condition: "Good", price: "€ 1,200", description: "Colorful floral still life." },
+            { file: "IMG_2732_cropped.png", title: "Abstract", artist: "Unknown", year: "20th Century", medium: "Oil on canvas", size: "70 × 55 cm", condition: "Good", price: "€ 1,500", description: "Bold abstract composition." },
+            { file: "IMG_2733_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "50 × 70 cm", condition: "Good", price: "€ 1,300", description: "Sweeping landscape panorama." },
+            { file: "IMG_2736_cropped.png", title: "Panoramic View", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "60 × 90 cm", condition: "Good", price: "€ 2,000", description: "Wide panoramic landscape." },
+            { file: "IMG_2739_cropped.png", title: "Antique Map of Zeeland", artist: "Unknown", year: "17th Century", medium: "Engraving", size: "55 × 45 cm", condition: "Good", price: "€ 2,500", description: "Historical map of the Zeeland province with decorative cartouches." },
+            { file: "IMG_2741_cropped.png", title: "Figure Composition", artist: "Unknown", year: "20th Century", medium: "Oil on canvas", size: "60 × 50 cm", condition: "Good", price: "€ 1,400", description: "Modernist figure arrangement." },
+            { file: "IMG_2746_cropped.png", title: "Landscape", artist: "Unknown", year: "19th Century", medium: "Oil on canvas", size: "55 × 75 cm", condition: "Good", price: "€ 1,500", description: "Expansive natural landscape." },
+            { file: "IMG_2748_cropped.png", title: "Still Life", artist: "Unknown", year: "19th Century", medium: "Oil on panel", size: "30 × 40 cm", condition: "Very Good", price: "€ 950", description: "Intimate still life on panel." }
+        ];
+
+        // State
+        let currentIndex = 0;
+        let isAnimating = false;
+        let scene, camera, renderer;
+        let currentPainting, nextPainting;
+        let paintingGroup;
+        let textureLoader;
+        let loadedTextures = {};
+        let spotlight;
+
+        // Initialize
+        function init() {
+            // Scene - Swiss white background
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xfafafa);
+
+            // Camera - pulled back for more breathing room
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 0, 7);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer with optimizations
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                powerPreference: "high-performance"
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.shadowMap.autoUpdate = false; // Manual shadow update for performance
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Texture loader
+            textureLoader = new THREE.TextureLoader();
+
+            // Build scene
+            createEnvironment();
+            createLighting();
+
+            // Load first painting with elegant entrance
+            loadPainting(currentIndex, (painting) => {
+                currentPainting = painting;
+                paintingGroup.add(currentPainting);
+
+                // Subtle reveal animation for first painting
+                currentPainting.children[0].material.transparent = true;
+                currentPainting.children[0].material.opacity = 0;
+
+                gsap.to(currentPainting.children[0].material, {
+                    opacity: 1,
+                    duration: 1.2,
+                    ease: "power2.out",
+                    delay: 0.2
+                });
+
+                updateUI();
+                document.getElementById('loading').classList.add('hidden');
+            });
+
+            // Preload adjacent
+            preloadTexture(currentIndex + 1);
+
+            // Events
+            setupEvents();
+
+            // Start render loop
+            animate();
+        }
+
+        function createEnvironment() {
+            // Swiss minimal wall - pure white, no texture
+            const wallGeometry = new THREE.PlaneGeometry(24, 14);
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0xfafafa,
+                roughness: 1,
+                metalness: 0
+            });
+            const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall.position.z = -0.5;
+            wall.receiveShadow = true;
+            scene.add(wall);
+
+            // Painting group (for animation)
+            paintingGroup = new THREE.Group();
+            scene.add(paintingGroup);
+        }
+
+        function createLighting() {
+            // Bright, even ambient light - clean museum lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+            scene.add(ambient);
+
+            // Subtle directional light for very soft shadow
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            dirLight.position.set(2, 4, 3);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.bias = -0.001;
+            dirLight.shadow.normalBias = 0.02;
+            dirLight.shadow.radius = 4; // Soft shadow
+            scene.add(dirLight);
+        }
+
+        function preloadTexture(index) {
+            if (index < 0 || index >= paintings.length) return;
+            if (loadedTextures[index]) return;
+
+            const painting = paintings[index];
+            textureLoader.load(`Cropped/${painting.file}`, (texture) => {
+                loadedTextures[index] = texture;
+            });
+        }
+
+        // Single elegant animation - Swiss precision
+        // One consistent motion for professional feel
+
+        function loadPainting(index, callback) {
+            const painting = paintings[index];
+
+            const loadTexture = (texture) => {
+                const aspect = texture.image.width / texture.image.height;
+                // Smaller paintings for more Swiss whitespace (60% of viewport)
+                const maxHeight = 3.0;
+                const maxWidth = 4.0;
+
+                let width, height;
+                if (aspect > maxWidth / maxHeight) {
+                    width = maxWidth;
+                    height = maxWidth / aspect;
+                } else {
+                    height = maxHeight;
+                    width = maxHeight * aspect;
+                }
+
+                const group = new THREE.Group();
+
+                // Canvas (the painting itself)
+                const canvasGeom = new THREE.PlaneGeometry(width, height);
+                const canvasMat = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    roughness: 0.7,
+                    metalness: 0
+                });
+                const canvas = new THREE.Mesh(canvasGeom, canvasMat);
+                canvas.castShadow = true;
+                canvas.receiveShadow = true;
+                group.add(canvas);
+
+                // Shadow caster - slightly visible dark edge to simulate frame depth
+                const shadowMargin = 0.08;
+                const shadowCasterGeom = new THREE.BoxGeometry(
+                    width + shadowMargin * 2,
+                    height + shadowMargin * 2,
+                    0.08  // Depth for shadow
+                );
+                const shadowCasterMat = new THREE.MeshStandardMaterial({
+                    color: 0x1a1a1a,
+                    transparent: true,
+                    opacity: 0.0,  // Invisible but casts shadow
+                    side: THREE.FrontSide
+                });
+                const shadowCaster = new THREE.Mesh(shadowCasterGeom, shadowCasterMat);
+                shadowCaster.position.z = 0.04;
+                shadowCaster.castShadow = true;
+                shadowCaster.receiveShadow = false;
+                group.add(shadowCaster);
+
+                group.userData = { index, painting, width, height };
+                callback(group);
+            };
+
+            if (loadedTextures[index]) {
+                loadTexture(loadedTextures[index]);
+            } else {
+                textureLoader.load(`Cropped/${painting.file}`, (texture) => {
+                    loadedTextures[index] = texture;
+                    loadTexture(texture);
+                });
+            }
+        }
+
+        function navigate(direction) {
+            if (isAnimating) return;
+
+            const newIndex = currentIndex + direction;
+            if (newIndex < 0 || newIndex >= paintings.length) return;
+
+            isAnimating = true;
+            document.body.classList.add('animating');
+
+            // Hide details panel during navigation
+            document.getElementById('detailsPanel').classList.remove('visible');
+
+            // Load new painting
+            loadPainting(newIndex, (painting) => {
+                nextPainting = painting;
+                paintingGroup.add(nextPainting);
+
+                // Single elegant reveal animation - Swiss precision
+                const timeline = gsap.timeline({
+                    onUpdate: () => {
+                        needsShadowUpdate = true;
+                    },
+                    onComplete: () => {
+                        paintingGroup.remove(currentPainting);
+                        currentPainting = nextPainting;
+                        currentIndex = newIndex;
+                        isAnimating = false;
+                        document.body.classList.remove('animating');
+                        currentPainting.scale.set(1, 1, 1);
+                        updateShadows();
+                        preloadTexture(currentIndex - 1);
+                        preloadTexture(currentIndex + 1);
+                        updateUI();
+                    }
+                });
+
+                // Elegant crossfade with subtle horizontal shift
+                // Current painting: fade out + slight shift away
+                currentPainting.children[0].material.transparent = true;
+                nextPainting.children[0].material.transparent = true;
+                nextPainting.children[0].material.opacity = 0;
+                nextPainting.position.set(direction * 0.3, 0, 0);
+
+                // Fade out current
+                timeline.to(currentPainting.children[0].material, {
+                    opacity: 0,
+                    duration: 0.6,
+                    ease: "power2.inOut"
+                });
+                timeline.to(currentPainting.position, {
+                    x: direction * -0.3,
+                    duration: 0.6,
+                    ease: "power2.inOut"
+                }, "<");
+
+                // Fade in next
+                timeline.to(nextPainting.children[0].material, {
+                    opacity: 1,
+                    duration: 0.6,
+                    ease: "power2.inOut"
+                }, "-=0.4");
+                timeline.to(nextPainting.position, {
+                    x: 0,
+                    duration: 0.6,
+                    ease: "power2.inOut"
+                }, "<");
+
+                // Update editorial elements during transition
+                timeline.call(() => {
+                    document.getElementById('paintingTitle').textContent = paintings[newIndex].title;
+                    document.getElementById('artistPreview').textContent = paintings[newIndex].artist;
+                    document.getElementById('currentNum').textContent = String(newIndex + 1).padStart(2, '0');
+                }, null, "-=0.3");
+            });
+        }
+
+        function updateUI() {
+            const painting = paintings[currentIndex];
+
+            // Editorial title (bottom left)
+            document.getElementById('paintingTitle').textContent = painting.title;
+            document.getElementById('artistPreview').textContent = painting.artist;
+
+            // Counter (top right) - zero-padded for Swiss aesthetic
+            document.getElementById('currentNum').textContent = String(currentIndex + 1).padStart(2, '0');
+            document.getElementById('totalNum').textContent = String(paintings.length).padStart(2, '0');
+
+            // Details panel (bottom right)
+            document.getElementById('infoYear').textContent = painting.year;
+            document.getElementById('infoMedium').textContent = painting.medium;
+            document.getElementById('infoSize').textContent = painting.size;
+            document.getElementById('infoCondition').textContent = painting.condition;
+            document.getElementById('infoDescription').textContent = painting.description;
+            document.getElementById('infoPrice').textContent = painting.price;
+
+            // Zoom
+            document.getElementById('zoomTitle').textContent = painting.title;
+            document.getElementById('zoomDetails').textContent = `${painting.artist} · ${painting.year} · ${painting.medium}`;
+
+            // Nav arrows
+            document.querySelector('.nav-arrow.left').classList.toggle('disabled', currentIndex === 0);
+            document.querySelector('.nav-arrow.right').classList.toggle('disabled', currentIndex === paintings.length - 1);
+
+            // Update offer display
+            updateHighestOfferDisplay();
+        }
+
+        function openZoom() {
+            if (isAnimating) return;
+            const painting = paintings[currentIndex];
+            document.getElementById('zoomImage').src = `Cropped/${painting.file}`;
+            document.getElementById('zoomOverlay').classList.add('active');
+        }
+
+        function closeZoom() {
+            document.getElementById('zoomOverlay').classList.remove('active');
+        }
+
+        function setupEvents() {
+            // Window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Keyboard
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') navigate(-1);
+                if (e.key === 'ArrowRight') navigate(1);
+                if (e.key === 'Escape') closeZoom();
+            });
+
+            // Details panel hover
+            const hoverZone = document.getElementById('hoverZone');
+            const detailsPanel = document.getElementById('detailsPanel');
+
+            hoverZone.addEventListener('mouseenter', () => {
+                detailsPanel.classList.add('visible');
+            });
+
+            detailsPanel.addEventListener('mouseenter', () => {
+                detailsPanel.classList.add('visible');
+            });
+
+            hoverZone.addEventListener('mouseleave', (e) => {
+                if (!detailsPanel.contains(e.relatedTarget)) {
+                    detailsPanel.classList.remove('visible');
+                }
+            });
+
+            detailsPanel.addEventListener('mouseleave', () => {
+                detailsPanel.classList.remove('visible');
+            });
+
+            // Click to zoom
+            renderer.domElement.addEventListener('click', () => {
+                openZoom();
+            });
+
+            // Click hint on painting hover
+            renderer.domElement.addEventListener('mouseenter', () => {
+                document.getElementById('clickHint').classList.add('visible');
+            });
+
+            renderer.domElement.addEventListener('mouseleave', () => {
+                document.getElementById('clickHint').classList.remove('visible');
+            });
+
+            // Zoom overlay click to close
+            document.getElementById('zoomOverlay').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('zoomOverlay')) {
+                    closeZoom();
+                }
+            });
+
+            // Very subtle parallax on mouse move - minimal
+            window.addEventListener('mousemove', (e) => {
+                if (isAnimating) return;
+                const x = (e.clientX / window.innerWidth - 0.5) * 0.05;
+                const y = (e.clientY / window.innerHeight - 0.5) * 0.03;
+
+                gsap.to(camera.position, {
+                    x: x,
+                    y: -y,
+                    duration: 1.5,
+                    ease: "power2.out"
+                });
+            });
+        }
+
+        // Shadow update flag for optimization
+        let needsShadowUpdate = true;
+
+        function updateShadows() {
+            needsShadowUpdate = true;
+        }
+
+        // ==================== OFFER SYSTEM ====================
+
+        // Load offers from localStorage
+        let allOffers = JSON.parse(localStorage.getItem('paintingOffers') || '{}');
+
+        function getHighestOffer(paintingFile) {
+            const offers = allOffers[paintingFile] || [];
+            if (offers.length === 0) return null;
+            return Math.max(...offers.map(o => o.amount));
+        }
+
+        function updateHighestOfferDisplay() {
+            const painting = paintings[currentIndex];
+            const highest = getHighestOffer(painting.file);
+            const el = document.getElementById('highestOffer');
+
+            if (highest) {
+                el.innerHTML = `Current highest offer: <span>€ ${highest.toLocaleString()}</span>`;
+            } else {
+                el.innerHTML = 'Be the first to make an offer';
+            }
+        }
+
+        function openOfferModal() {
+            const painting = paintings[currentIndex];
+            document.getElementById('offerPaintingTitle').textContent = painting.title;
+            document.getElementById('offerPaintingDetails').textContent = `${painting.artist} - ${painting.medium}`;
+
+            // Reset form
+            document.getElementById('offerForm').reset();
+            document.getElementById('offerFormContainer').style.display = 'block';
+            document.getElementById('offerSuccessContainer').style.display = 'none';
+
+            // Pre-fill suggested amount based on asking price
+            const askingPrice = parseInt(painting.price.replace(/[^0-9]/g, '')) || 1000;
+            document.getElementById('offerAmount').placeholder = `Asking: € ${askingPrice.toLocaleString()}`;
+
+            document.getElementById('offerModal').classList.add('active');
+        }
+
+        function closeOfferModal() {
+            document.getElementById('offerModal').classList.remove('active');
+        }
+
+        function submitOffer(event) {
+            event.preventDefault();
+
+            const painting = paintings[currentIndex];
+            const email = document.getElementById('offerEmail').value;
+            const amount = parseInt(document.getElementById('offerAmount').value);
+            const name = document.getElementById('offerName').value || 'Anonymous';
+
+            // Create offer object
+            const offer = {
+                email,
+                amount,
+                name,
+                paintingTitle: painting.title,
+                paintingFile: painting.file,
+                timestamp: new Date().toISOString()
+            };
+
+            // Save to localStorage
+            if (!allOffers[painting.file]) {
+                allOffers[painting.file] = [];
+            }
+            allOffers[painting.file].push(offer);
+            localStorage.setItem('paintingOffers', JSON.stringify(allOffers));
+
+            // Show success message
+            document.getElementById('confirmEmail').textContent = email;
+            document.getElementById('offerFormContainer').style.display = 'none';
+            document.getElementById('offerSuccessContainer').style.display = 'block';
+
+            // Update display
+            updateHighestOfferDisplay();
+
+            // Log offer (in production, this would be sent to a server)
+            console.log('New offer submitted:', offer);
+
+            // Close modal after delay
+            setTimeout(() => {
+                closeOfferModal();
+            }, 3000);
+        }
+
+        // Close modal on click outside
+        document.getElementById('offerModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('offerModal')) {
+                closeOfferModal();
+            }
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Only update shadows when needed (after animation settles)
+            if (needsShadowUpdate) {
+                renderer.shadowMap.needsUpdate = true;
+                needsShadowUpdate = false;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
