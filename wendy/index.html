@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galerie Admin - Wendy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 20px 40px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-secondary {
+            background: #e5e5e5;
+            color: #1a1a1a;
+        }
+
+        .btn-secondary:hover {
+            background: #d5d5d5;
+        }
+
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e5e5;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 500;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .paintings-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .painting-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e5e5;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .painting-card:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .painting-thumb {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .painting-details {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .field label {
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #666;
+        }
+
+        .field input, .field textarea {
+            padding: 10px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .field input:focus, .field textarea:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+
+        .field textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .painting-index {
+            font-size: 0.7rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 5px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: auto;
+        }
+
+        .modal-content h2 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .modal-content pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            overflow: auto;
+            max-height: 400px;
+        }
+
+        .modal-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1a1a1a;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success {
+            background: #22c55e;
+        }
+
+        /* Search */
+        .search-bar {
+            margin-bottom: 30px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .painting-card {
+                grid-template-columns: 1fr;
+            }
+
+            .painting-thumb {
+                width: 100%;
+                height: 200px;
+            }
+
+            .painting-details {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Galerie Admin</h1>
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="resetChanges()">Reset</button>
+            <button class="btn btn-primary" onclick="saveToLocal()">Save Draft</button>
+            <button class="btn btn-success" onclick="exportChanges()">Export Code</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="totalPaintings">0</div>
+                <div class="stat-label">Paintings</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="changesCount">0</div>
+                <div class="stat-label">Changes</div>
+            </div>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search paintings by title, artist..." oninput="filterPaintings()">
+        </div>
+
+        <div class="paintings-grid" id="paintingsGrid">
+            <!-- Paintings will be inserted here -->
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal">
+        <div class="modal-content">
+            <h2>Export Updated Code</h2>
+            <p style="margin-bottom: 15px; color: #666; font-size: 0.85rem;">
+                Copy this code and send it to the developer to update the website.
+            </p>
+            <pre id="exportCode"></pre>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+                <button class="btn btn-primary" onclick="copyToClipboard()">Copy to Clipboard</button>
+                <button class="btn btn-success" onclick="downloadJSON()">Download JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Paintings data - synced from main gallery
+        let paintings = [
+            {
+                file: "IMG_2653_cropped.png",
+                title: "Wooded Landscape with Riders",
+                artist: "Circle of Aelbert Cuyp",
+                year: "c. 1650-1680",
+                medium: "Oil on canvas",
+                size: "60 x 45 cm",
+                condition: "Good",
+                price: "8,500",
+                description: "A masterful Dutch Golden Age landscape showing travelers on horseback in a wooded setting."
+            },
+            {
+                file: "IMG_2656_cropped.png",
+                title: "Castle Architecture",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Etching",
+                size: "40 x 35 cm",
+                condition: "Very Good",
+                price: "450",
+                description: "Detailed architectural study of a medieval castle ruins."
+            },
+            {
+                file: "IMG_2666_cropped.png",
+                title: "Dutch Canal Scene with Drawbridge",
+                artist: "L. Marissa",
+                year: "Late 19th Century",
+                medium: "Oil on panel",
+                size: "35 x 45 cm",
+                condition: "Good",
+                price: "1,800",
+                description: "A charming Dutch village scene with traditional stepped-gable canal houses and a drawbridge."
+            },
+            {
+                file: "IMG_2668_cropped.png",
+                title: "Amsterdam Canal",
+                artist: "Unknown Dutch School",
+                year: "19th Century",
+                medium: "Oil on canvas",
+                size: "50 x 40 cm",
+                condition: "Good",
+                price: "1,500",
+                description: "Classic Amsterdam canal view with merchant houses."
+            },
+            {
+                file: "IMG_2675_cropped.png",
+                title: "Portrait of a Lady with Cigarette",
+                artist: "L. Kiingo (attrib.)",
+                year: "c. 1925-1935",
+                medium: "Oil and mixed media on board",
+                size: "70 x 50 cm",
+                condition: "Very Good",
+                price: "4,500",
+                description: "A striking Art Deco portrait in the style of Tamara de Lempicka."
+            },
+            {
+                file: "IMG_2676_cropped.png",
+                title: "Madonna and Child",
+                artist: "Unknown Flemish",
+                year: "Mid-20th Century",
+                medium: "Enamel on copper tile",
+                size: "80 x 60 cm",
+                condition: "Good",
+                price: "1,800",
+                description: "A devotional enamel tile depicting the Virgin Mary with the Christ Child."
+            },
+            {
+                file: "IMG_2680_cropped.png",
+                title: "View of the Zuiderzee near Enkhuizen",
+                artist: "After Simon de Vlieger",
+                year: "c. 1750-1780",
+                medium: "Copper engraving",
+                size: "35 x 50 cm",
+                condition: "Good",
+                price: "550",
+                description: "Fine 18th century maritime engraving showing Dutch sailing vessels."
+            },
+            {
+                file: "IMG_2681_cropped.png",
+                title: "Coastal View",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Oil on canvas",
+                size: "40 x 55 cm",
+                condition: "Good",
+                price: "1,100",
+                description: "Peaceful coastal landscape in the Dutch Romantic tradition."
+            },
+            {
+                file: "IMG_2685_cropped.png",
+                title: "Rural Scene",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Oil on canvas",
+                size: "55 x 75 cm",
+                condition: "Good",
+                price: "1,400",
+                description: "Idyllic countryside scene."
+            },
+            {
+                file: "IMG_2686_cropped.png",
+                title: "Stowe Castle",
+                artist: "Unknown British",
+                year: "c. 1845",
+                medium: "Pencil on paper",
+                size: "25 x 30 cm",
+                condition: "Very Good",
+                price: "400",
+                description: "Pencil drawing of Stowe Castle with period inscription."
+            },
+            {
+                file: "IMG_2689_cropped.png",
+                title: "St. Martin's Church, Landshut",
+                artist: "Unknown German",
+                year: "19th Century",
+                medium: "Steel engraving",
+                size: "35 x 28 cm",
+                condition: "Good",
+                price: "350",
+                description: "Historical view of the Martinskirche in Landshut, Bavaria."
+            },
+            {
+                file: "IMG_2692_cropped.png",
+                title: "Madonna and Child",
+                artist: "Jan Toorop (attrib.)",
+                year: "c. 1910-1925",
+                medium: "Charcoal and chalk on paper",
+                size: "35 x 28 cm",
+                condition: "Good",
+                price: "12,000",
+                description: "A devotional drawing in the distinctive Art Nouveau Symbolist style of Jan Toorop."
+            },
+            {
+                file: "IMG_2695_cropped.png",
+                title: "Landscape View",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Oil on canvas",
+                size: "50 x 70 cm",
+                condition: "Good",
+                price: "1,300",
+                description: "Expansive landscape vista."
+            },
+            {
+                file: "IMG_2696_cropped.png",
+                title: "Madonna and Child with Halo",
+                artist: "L. Kiingo (attrib.)",
+                year: "c. 1925-1935",
+                medium: "Oil on canvas",
+                size: "55 x 45 cm",
+                condition: "Good",
+                price: "4,500",
+                description: "A modernist religious painting combining Cubist structure with Byzantine iconography."
+            },
+            {
+                file: "IMG_2699_cropped.png",
+                title: "Farmhouse by the Water",
+                artist: "Dutch Romantic School",
+                year: "c. 1860-1890",
+                medium: "Oil on canvas",
+                size: "60 x 50 cm",
+                condition: "Good",
+                price: "2,200",
+                description: "A romantic Dutch landscape showing a farmhouse reflected in still water."
+            },
+            {
+                file: "IMG_2703_cropped.png",
+                title: "Village Scene",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Oil on panel",
+                size: "30 x 40 cm",
+                condition: "Good",
+                price: "750",
+                description: "Charming village street scene."
+            },
+            {
+                file: "IMG_2705_cropped.png",
+                title: "Castle by the River",
+                artist: "German Expressionist School",
+                year: "c. 1920-1940",
+                medium: "Woodcut print",
+                size: "50 x 40 cm",
+                condition: "Good",
+                price: "800",
+                description: "A dramatic expressionist print depicting a medieval castle."
+            },
+            {
+                file: "IMG_2710_cropped.png",
+                title: "Figure with Birds",
+                artist: "Unknown Expressionist",
+                year: "c. 1930-1950",
+                medium: "Ink and wash on paper",
+                size: "65 x 50 cm",
+                condition: "Good",
+                price: "1,400",
+                description: "An evocative expressionist drawing showing a stylized figure with birds."
+            },
+            {
+                file: "IMG_2711_cropped.png",
+                title: "Architectural Study",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Drawing",
+                size: "40 x 30 cm",
+                condition: "Good",
+                price: "500",
+                description: "Detailed architectural drawing."
+            },
+            {
+                file: "IMG_2713_cropped.png",
+                title: "Landscape",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Oil on canvas",
+                size: "45 x 60 cm",
+                condition: "Good",
+                price: "1,000",
+                description: "Atmospheric landscape."
+            },
+            {
+                file: "IMG_2715_cropped.png",
+                title: "Portrait Study",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Oil on canvas",
+                size: "55 x 45 cm",
+                condition: "Good",
+                price: "1,200",
+                description: "Character portrait study."
+            },
+            {
+                file: "IMG_2717_cropped.png",
+                title: "The Coffin Maker's Workshop",
+                artist: "After Jean-Baptiste Greuze",
+                year: "Late 18th Century",
+                medium: "Stipple engraving",
+                size: "35 x 45 cm",
+                condition: "Good",
+                price: "650",
+                description: "A fine stipple engraving depicting a genre scene."
+            },
+            {
+                file: "IMG_2723_cropped.png",
+                title: "Gothic Church Tower",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Charcoal on toned paper",
+                size: "60 x 45 cm",
+                condition: "Good",
+                price: "600",
+                description: "Atmospheric sketch of a Gothic church tower."
+            },
+            {
+                file: "IMG_2725_cropped.png",
+                title: "Still Life with Tulips",
+                artist: "Unknown Dutch",
+                year: "20th Century",
+                medium: "Oil on panel",
+                size: "40 x 50 cm",
+                condition: "Good",
+                price: "850",
+                description: "A dark, mysterious still life of red tulips in a glass vase."
+            },
+            {
+                file: "IMG_2729_cropped.png",
+                title: "Landscape",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Oil on canvas",
+                size: "45 x 60 cm",
+                condition: "Good",
+                price: "1,000",
+                description: "Peaceful countryside landscape."
+            },
+            {
+                file: "IMG_2730_cropped.png",
+                title: "Sunflowers in White Vase",
+                artist: "R. de Roeck",
+                year: "c. 1940-1960",
+                medium: "Oil on canvas",
+                size: "55 x 45 cm",
+                condition: "Very Good",
+                price: "1,800",
+                description: "A vibrant expressionist still life of sunflowers."
+            },
+            {
+                file: "IMG_2731_cropped.png",
+                title: "Sunflowers",
+                artist: "R. de Roeck",
+                year: "c. 1940-1960",
+                medium: "Oil on canvas",
+                size: "50 x 40 cm",
+                condition: "Good",
+                price: "1,600",
+                description: "Another expressive sunflower composition."
+            },
+            {
+                file: "IMG_2732_cropped.png",
+                title: "Map of Flanders Provinces",
+                artist: "German cartographer",
+                year: "19th Century",
+                medium: "Steel engraving",
+                size: "70 x 55 cm",
+                condition: "Good",
+                price: "350",
+                description: "Historical map of East and West Flanders."
+            },
+            {
+                file: "IMG_2733_cropped.png",
+                title: "Pictorial Map of Hulst",
+                artist: "Mark F. Severin",
+                year: "1980",
+                medium: "Lithograph print",
+                size: "50 x 70 cm",
+                condition: "Very Good",
+                price: "150",
+                description: "A decorative illustrated map of Hulst, Zeeland."
+            },
+            {
+                file: "IMG_2736_cropped.png",
+                title: "Panoramic View",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Oil on canvas",
+                size: "60 x 90 cm",
+                condition: "Good",
+                price: "2,000",
+                description: "Wide panoramic landscape."
+            },
+            {
+                file: "IMG_2739_cropped.png",
+                title: "Zeelandia Comitatus",
+                artist: "Willem Blaeu / Johannes Janssonius",
+                year: "c. 1640-1660",
+                medium: "Copper engraving with hand coloring",
+                size: "50 x 38 cm",
+                condition: "Good",
+                price: "1,800",
+                description: "An important 17th century map of the County of Zeeland."
+            },
+            {
+                file: "IMG_2741_cropped.png",
+                title: "Rotterdam Harbor with Grain Silo",
+                artist: "Herman (attrib.)",
+                year: "c. 1930-1950",
+                medium: "Ink wash and watercolor",
+                size: "60 x 50 cm",
+                condition: "Good",
+                price: "900",
+                description: "An industrial harbor scene of Rotterdam's port."
+            },
+            {
+                file: "IMG_2746_cropped.png",
+                title: "Landscape",
+                artist: "Unknown",
+                year: "19th Century",
+                medium: "Oil on canvas",
+                size: "55 x 75 cm",
+                condition: "Good",
+                price: "1,500",
+                description: "Expansive natural landscape."
+            }
+        ];
+
+        // Original data for reset
+        const originalPaintings = JSON.parse(JSON.stringify(paintings));
+
+        // Track changes
+        let changesCount = 0;
+
+        // Load saved data from localStorage
+        function loadSavedData() {
+            const saved = localStorage.getItem('galerie_admin_paintings');
+            if (saved) {
+                try {
+                    paintings = JSON.parse(saved);
+                    showToast('Loaded saved draft', 'success');
+                } catch (e) {
+                    console.error('Error loading saved data');
+                }
+            }
+        }
+
+        // Render paintings
+        function renderPaintings(filter = '') {
+            const grid = document.getElementById('paintingsGrid');
+            grid.innerHTML = '';
+
+            const filterLower = filter.toLowerCase();
+
+            paintings.forEach((painting, index) => {
+                // Filter check
+                if (filter && !painting.title.toLowerCase().includes(filterLower) &&
+                    !painting.artist.toLowerCase().includes(filterLower)) {
+                    return;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'painting-card';
+                card.innerHTML = `
+                    <img class="painting-thumb" src="../Cropped/thumbs/${painting.file.replace('.png', '.jpg')}"
+                         alt="${painting.title}"
+                         onerror="this.src='../Cropped/${painting.file}'">
+                    <div class="painting-details">
+                        <div class="painting-index" style="grid-column: 1/-1;">#${index + 1} - ${painting.file}</div>
+                        <div class="field">
+                            <label>Title</label>
+                            <input type="text" value="${escapeHtml(painting.title)}"
+                                   onchange="updateField(${index}, 'title', this.value)">
+                        </div>
+                        <div class="field">
+                            <label>Artist</label>
+                            <input type="text" value="${escapeHtml(painting.artist)}"
+                                   onchange="updateField(${index}, 'artist', this.value)">
+                        </div>
+                        <div class="field">
+                            <label>Year</label>
+                            <input type="text" value="${escapeHtml(painting.year)}"
+                                   onchange="updateField(${index}, 'year', this.value)">
+                        </div>
+                        <div class="field">
+                            <label>Price (EUR)</label>
+                            <input type="text" value="${escapeHtml(painting.price)}"
+                                   onchange="updateField(${index}, 'price', this.value)">
+                        </div>
+                        <div class="field">
+                            <label>Medium</label>
+                            <input type="text" value="${escapeHtml(painting.medium)}"
+                                   onchange="updateField(${index}, 'medium', this.value)">
+                        </div>
+                        <div class="field">
+                            <label>Size</label>
+                            <input type="text" value="${escapeHtml(painting.size)}"
+                                   onchange="updateField(${index}, 'size', this.value)">
+                        </div>
+                        <div class="field">
+                            <label>Condition</label>
+                            <input type="text" value="${escapeHtml(painting.condition)}"
+                                   onchange="updateField(${index}, 'condition', this.value)">
+                        </div>
+                        <div class="field full-width">
+                            <label>Description</label>
+                            <textarea onchange="updateField(${index}, 'description', this.value)">${escapeHtml(painting.description)}</textarea>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            document.getElementById('totalPaintings').textContent = paintings.length;
+        }
+
+        // Escape HTML
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;');
+        }
+
+        // Update field
+        function updateField(index, field, value) {
+            paintings[index][field] = value;
+            changesCount++;
+            document.getElementById('changesCount').textContent = changesCount;
+        }
+
+        // Filter paintings
+        function filterPaintings() {
+            const query = document.getElementById('searchInput').value;
+            renderPaintings(query);
+        }
+
+        // Save to localStorage
+        function saveToLocal() {
+            localStorage.setItem('galerie_admin_paintings', JSON.stringify(paintings));
+            showToast('Draft saved!', 'success');
+        }
+
+        // Reset changes
+        function resetChanges() {
+            if (confirm('Reset all changes? This cannot be undone.')) {
+                paintings = JSON.parse(JSON.stringify(originalPaintings));
+                localStorage.removeItem('galerie_admin_paintings');
+                changesCount = 0;
+                document.getElementById('changesCount').textContent = 0;
+                renderPaintings();
+                showToast('Changes reset');
+            }
+        }
+
+        // Export changes
+        function exportChanges() {
+            const exportData = paintings.map(p => ({
+                file: p.file,
+                title: p.title,
+                artist: p.artist,
+                year: p.year,
+                medium: p.medium,
+                size: p.size,
+                condition: p.condition,
+                price: `\u20AC ${p.price}`,
+                description: p.description
+            }));
+
+            document.getElementById('exportCode').textContent = JSON.stringify(exportData, null, 2);
+            document.getElementById('exportModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('exportModal').classList.remove('active');
+        }
+
+        // Copy to clipboard
+        function copyToClipboard() {
+            const code = document.getElementById('exportCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                showToast('Copied to clipboard!', 'success');
+            });
+        }
+
+        // Download JSON
+        function downloadJSON() {
+            const code = document.getElementById('exportCode').textContent;
+            const blob = new Blob([code], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'paintings-update.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Downloaded!', 'success');
+        }
+
+        // Show toast
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast visible ' + type;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        // Close modal on outside click
+        document.getElementById('exportModal').addEventListener('click', (e) => {
+            if (e.target.id === 'exportModal') closeModal();
+        });
+
+        // Initialize
+        loadSavedData();
+        renderPaintings();
+    </script>
+</body>
+</html>
