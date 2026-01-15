@@ -1453,7 +1453,40 @@
         let touchStartX = 0;
         let touchStartY = 0;
         let touchEndX = 0;
+        let touchEndY = 0;
+        let touchStartTime = 0;
         let isSwiping = false;
+        let isGalleryPanning = false;
+        let galleryPanVelocity = 0;
+        let lastPanY = 0;
+        let galleryMomentumId = null;
+
+        // Helper: Check if we're on mobile
+        function isMobileDevice() {
+            return window.innerWidth <= 768;
+        }
+
+        // Helper: Animate camera when details panel opens/closes on mobile
+        function updateCameraForDetails(isVisible) {
+            if (!isMobileDevice() || isGalleryMode) return;
+            const targetY = isVisible ? 0.6 : 0;
+            gsap.to(camera.position, {
+                y: targetY,
+                duration: 0.4,
+                ease: "power2.out"
+            });
+        }
+
+        // Helper: Get gallery scroll bounds
+        function getGalleryBounds() {
+            const cols = getGalleryCols();
+            const rows = Math.ceil(paintings.length / cols);
+            const gridHeight = rows * (GALLERY_THUMB_SIZE + GALLERY_SPACING) - GALLERY_SPACING;
+            const cameraZ = camera.position.z;
+            const visibleHeight = 2 * Math.tan((camera.fov * Math.PI / 180) / 2) * cameraZ;
+            const maxY = Math.max(0, (gridHeight - visibleHeight) / 2 + 1);
+            return { minY: -maxY, maxY: maxY };
+        }
 
         // Initialize
         function init() {
@@ -1978,8 +2011,15 @@
             isAnimating = true;
             document.body.classList.add('animating');
 
-            // Hide details panel during navigation
+            // Hide details panel during navigation and reset camera
             document.getElementById('detailsPanel').classList.remove('visible');
+            updateCameraForDetails(false);
+
+            // Reset painting position/rotation from swipe gesture
+            if (currentPainting) {
+                currentPainting.position.x = 0;
+                currentPainting.rotation.y = 0;
+            }
 
             // Load new painting
             loadPainting(newIndex, (painting) => {
@@ -2176,6 +2216,7 @@
                 if (!isGalleryMode) {
                     e.preventDefault();
                     detailsPanel.classList.toggle('visible');
+                    updateCameraForDetails(detailsPanel.classList.contains('visible'));
                 }
             }, { passive: false });
 
@@ -2185,6 +2226,7 @@
                 e.stopPropagation();
                 if (!isGalleryMode) {
                     detailsPanel.classList.toggle('visible');
+                    updateCameraForDetails(detailsPanel.classList.contains('visible'));
                 }
             });
 
@@ -2195,6 +2237,7 @@
                     !hoverZone.contains(e.target) &&
                     !mobileInfoBtn.contains(e.target)) {
                     detailsPanel.classList.remove('visible');
+                    updateCameraForDetails(false);
                 }
             }, { passive: true });
 
@@ -2304,35 +2347,114 @@
             renderer.domElement.addEventListener('touchstart', (e) => {
                 touchStartX = e.touches[0].clientX;
                 touchStartY = e.touches[0].clientY;
+                touchEndX = touchStartX;
+                touchEndY = touchStartY;
+                touchStartTime = Date.now();
                 isSwiping = false;
+                isGalleryPanning = false;
+                lastPanY = touchStartY;
+
+                // Stop any gallery momentum scrolling
+                if (galleryMomentumId) {
+                    cancelAnimationFrame(galleryMomentumId);
+                    galleryMomentumId = null;
+                }
+                galleryPanVelocity = 0;
             }, { passive: true });
 
-            // Touch move - detect swipe
+            // Touch move - detect swipe with live feedback
             renderer.domElement.addEventListener('touchmove', (e) => {
                 if (!touchStartX) return;
 
                 touchEndX = e.touches[0].clientX;
+                touchEndY = e.touches[0].clientY;
                 const diffX = touchStartX - touchEndX;
-                const diffY = Math.abs(touchStartY - e.touches[0].clientY);
+                const diffY = touchStartY - touchEndY;
 
-                // Only swipe if horizontal movement > vertical
-                if (Math.abs(diffX) > 30 && Math.abs(diffX) > diffY) {
-                    isSwiping = true;
+                if (isGalleryMode) {
+                    // Gallery mode: vertical pan to scroll
+                    if (Math.abs(diffY) > 10) {
+                        isGalleryPanning = true;
+
+                        // Calculate velocity for momentum
+                        const currentY = e.touches[0].clientY;
+                        galleryPanVelocity = (lastPanY - currentY) * 0.015;
+                        lastPanY = currentY;
+
+                        // Pan camera vertically
+                        const bounds = getGalleryBounds();
+                        const panAmount = diffY * 0.008;
+                        camera.position.y = Math.max(bounds.minY, Math.min(bounds.maxY, camera.position.y + (lastPanY - currentY) * 0.008));
+                        lastPanY = currentY;
+                    }
+                } else {
+                    // Single painting view: horizontal swipe with visual feedback
+                    if (Math.abs(diffX) > 20 && Math.abs(diffX) > Math.abs(diffY)) {
+                        isSwiping = true;
+
+                        // Live drag feedback - painting follows finger
+                        if (currentPainting && !isAnimating) {
+                            const dragOffset = -diffX * 0.003;
+                            currentPainting.position.x = dragOffset;
+                            // Slight rotation for natural feel
+                            currentPainting.rotation.y = dragOffset * 0.1;
+                        }
+                    }
                 }
             }, { passive: true });
 
             // Touch end - execute swipe or tap
             renderer.domElement.addEventListener('touchend', (e) => {
-                if (isSwiping && !isGalleryMode) {
-                    const diffX = touchStartX - touchEndX;
-                    if (diffX > 50) {
-                        // Swipe left - next painting
-                        navigate(1);
-                    } else if (diffX < -50) {
-                        // Swipe right - previous painting
-                        navigate(-1);
+                const swipeDuration = Date.now() - touchStartTime;
+                const diffX = touchStartX - touchEndX;
+                const diffY = touchStartY - touchEndY;
+
+                if (isGalleryMode && isGalleryPanning) {
+                    // Start momentum scrolling for gallery
+                    if (Math.abs(galleryPanVelocity) > 0.01) {
+                        const applyMomentum = () => {
+                            const bounds = getGalleryBounds();
+                            camera.position.y += galleryPanVelocity;
+                            camera.position.y = Math.max(bounds.minY, Math.min(bounds.maxY, camera.position.y));
+
+                            // Friction
+                            galleryPanVelocity *= 0.95;
+
+                            if (Math.abs(galleryPanVelocity) > 0.001) {
+                                galleryMomentumId = requestAnimationFrame(applyMomentum);
+                            }
+                        };
+                        galleryMomentumId = requestAnimationFrame(applyMomentum);
                     }
-                } else if (!isSwiping) {
+                } else if (isSwiping && !isGalleryMode) {
+                    // Calculate velocity (pixels per millisecond)
+                    const velocity = Math.abs(diffX) / swipeDuration;
+
+                    // Navigate if distance OR velocity threshold met
+                    const shouldNavigate = Math.abs(diffX) > 40 || velocity > 0.3;
+
+                    if (shouldNavigate) {
+                        if (diffX > 0) {
+                            navigate(1); // Swipe left - next
+                        } else {
+                            navigate(-1); // Swipe right - previous
+                        }
+                    } else {
+                        // Snap back - didn't meet threshold
+                        if (currentPainting) {
+                            gsap.to(currentPainting.position, {
+                                x: 0,
+                                duration: 0.3,
+                                ease: "power2.out"
+                            });
+                            gsap.to(currentPainting.rotation, {
+                                y: 0,
+                                duration: 0.3,
+                                ease: "power2.out"
+                            });
+                        }
+                    }
+                } else if (!isSwiping && !isGalleryPanning) {
                     // It was a tap, not a swipe
                     if (isGalleryMode) {
                         // Handle gallery tap
@@ -2352,6 +2474,7 @@
                         // Toggle details panel on tap (mobile)
                         if ('ontouchstart' in window) {
                             detailsPanel.classList.toggle('visible');
+                            updateCameraForDetails(detailsPanel.classList.contains('visible'));
                         }
                     }
                 }
@@ -2360,12 +2483,14 @@
                 touchStartX = 0;
                 touchStartY = 0;
                 touchEndX = 0;
+                touchEndY = 0;
                 isSwiping = false;
+                isGalleryPanning = false;
             }, { passive: true });
 
             // Prevent default touch behaviors that might interfere
             renderer.domElement.addEventListener('touchmove', (e) => {
-                if (isSwiping) {
+                if (isSwiping || isGalleryPanning) {
                     e.preventDefault();
                 }
             }, { passive: false });
